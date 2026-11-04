@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Playlist Forge{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    .conf-HIGH { color: #2e7d32; } .conf-MEDIUM { color: #b26a00; } .conf-LOW { color: #c62828; font-weight: 600; } .conf-USER { color: #1565c0; } .conf-ASSUMED { color: #6d6d6d; }
+    table td, table th { font-size: 0.9rem; }
+    footer { margin-top: 3rem; font-size: 0.8rem; opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><a href="/"><strong>Playlist Forge</strong></a></li></ul>
+      <ul><li><a href="/upload">Start</a></li></ul>
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="container">
+    Your files are processed and deleted after 24 hours. Playlist Forge never sees your Spotify login.
+    Not affiliated with Spotify.
+  </footer>
+</body>
+</html>

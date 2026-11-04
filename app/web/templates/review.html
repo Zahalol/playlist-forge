@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Check periods - Playlist Forge{% endblock %}
+{% block content %}
+<h2>Check what we found</h2>
+
+{% if needs_review %}
+<article style="border-left: 4px solid #c62828">
+  <strong>Please check the labels below.</strong>
+  {% if cross_check == "fail" %}Your artist and track lists do not line up the way we expected, so the 4-week and 12-month labels may be swapped.{% endif %}
+  Some labels have low confidence. Fix any that look wrong and press Update.
+</article>
+{% else %}
+<p>We worked out the time period of each file from its contents. Fix anything that looks wrong and press Update.</p>
+{% endif %}
+
+<form method="post" action="/review/{{ token }}">
+<figure>
+<table>
+  <thead><tr><th>File</th><th>Type</th><th>Time period</th><th>Items</th><th>First item</th><th>Confidence</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{{ r.file }}</td>
+      <td>
+        <select name="cat::{{ r.file }}">
+          {% for c in categories %}<option value="{{ c }}" {% if c == r.category %}selected{% endif %}>{{ c }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>
+        <select name="per::{{ r.file }}">
+          <option value="" {% if not r.period %}selected{% endif %}>(not used)</option>
+          {% for p in periods %}<option value="{{ p }}" {% if p == r.period %}selected{% endif %}>{{ p }}</option>{% endfor %}
+        </select>
+      </td>
+      <td>{{ r.n }}</td>
+      <td>{{ r.first }}</td>
+      <td class="conf-{{ r.confidence }}">{{ r.confidence }}</td>
+      <td>{{ r.status }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</figure>
+<button type="submit" class="secondary">Update</button>
+</form>
+
+{% if missing %}
+<p><small>Missing lists: {% for c, p in missing %}{{ c }} ({{ p }}){% if not loop.last %}, {% endif %}{% endfor %}. Profiles will be rougher without them.</small></p>
+{% endif %}
+
+<h3>Your listening at a glance</h3>
+<div class="grid">
+  <article><header>Top artists</header>
+    <ol>{% for a in parsed.artists[:10] %}<li>{{ a.name }} <small>({{ a.n_lists }} list{{ "s" if a.n_lists != 1 }})</small></li>{% endfor %}</ol>
+  </article>
+  <article><header>Top songs</header>
+    <ol>{% for t in parsed.tracks[:10] %}<li>{{ t.name }} <small>- {{ t.artist }}</small></li>{% endfor %}</ol>
+  </article>
+  <article><header>Top genres</header>
+    <ol>{% for g in parsed.genres[:10] %}<li>{{ g.name }}</li>{% endfor %}</ol>
+  </article>
+</div>
+
+<p>
+  <a href="/review/{{ token }}/listening.csv" role="button" class="outline">Download as CSV</a>
+  <button disabled title="Coming in the next build phase">Build my profiles (coming soon)</button>
+</p>
+{% endblock %}

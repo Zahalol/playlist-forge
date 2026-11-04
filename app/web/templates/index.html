@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<hgroup>
+  <h1>Playlist Forge</h1>
+  <p>Turn your Spotify listening stats into taste profiles, new music you will actually like, and ready-made playlists.</p>
+</hgroup>
+
+<article>
+  <h3>How it works</h3>
+  <ol>
+    <li>Export your top tracks, artists and genres from <a href="https://skiley.net/stats" target="_blank" rel="noopener">Skiley</a> as text files (last 4 weeks, 6 months and 12 months).</li>
+    <li>Drop the files here. We work out which file is which time period, so you do not need to rename anything.</li>
+    <li>Get your listening split into profiles, with recommendations and a playlist for each.</li>
+    <li>Paste a playlist into Soundiiz or TuneMyMusic to add it to Spotify.</li>
+  </ol>
+  <p><small>You sign in to Spotify on Skiley (to export) and on the import tool (to save the playlist). Playlist Forge itself never asks for or sees your Spotify login.</small></p>
+  <a href="/upload" role="button">Start</a>
+</article>
+
+<p><small>Status: early build. Upload and period detection work today; profiles, recommendations and playlists are coming next.</small></p>
+{% endblock %}

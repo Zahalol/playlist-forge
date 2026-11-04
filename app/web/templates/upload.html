@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Upload - Playlist Forge{% endblock %}
+{% block content %}
+<h2>Upload your Skiley exports</h2>
+{% if error %}<article style="border-left: 4px solid #c62828"><strong>Problem:</strong> {{ error }}</article>{% endif %}
+
+<form method="post" action="/upload" enctype="multipart/form-data">
+  <label>
+    Skiley .txt files (up to 9: Top Tracks, Top Artists, Top Genres for each time period)
+    <input type="file" name="files" accept=".txt,text/plain" multiple>
+  </label>
+  <small>Quick mode: the three 12-month files are enough to get started, but all nine give better profiles. File names do not matter.</small>
+
+  <details>
+    <summary>Or paste the lists instead</summary>
+    <label>
+      Paste each list, separated by two blank lines
+      <textarea name="pasted" rows="10" placeholder="Twin Size Mattress - The Front Bottoms&#10;Bad Apple - Cameron Whitcomb&#10;..."></textarea>
+    </label>
+  </details>
+
+  <button type="submit">Check my files</button>
+</form>
+{% endblock %}

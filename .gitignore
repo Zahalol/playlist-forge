@@ -1,0 +1,18 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+*.sqlite
+*.db
+~$*
+*.xlsx#
+.pytest_cache/
+.replit_cache/
+uploads/
+poc/output/music_cache.json.tmp
+.claude/settings.local.json
+
+# Local-only proof-of-concept data (personal exports, workbook, third-party API cache)
+poc/exports/
+poc/output/*.xlsx
+poc/output/music_cache.json
