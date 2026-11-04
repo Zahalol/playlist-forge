@@ -29,14 +29,14 @@ One row per decision. Add new ones at the bottom of Decided or Open. Last update
 | D-21 | Test data in the public repo | Mike's own Skiley export is the fixture and is public. Site users' data is never in the repo. Friends' exports only with their OK. | Realistic tests; Mike is fine with his top lists being public. | 2026-11-04 |
 | D-22 | Code location | `C:\dev\playlist-forge`, outside OneDrive. The OneDrive folder becomes an archive after the move. | Git repos inside OneDrive get corrupted. | 2026-11-04 |
 | D-23 | Period detection | Classify each file's category and period from content (docs/SKILEY_PERIOD_CLASSIFIER.md); show labels with confidence; user can override; never trust file names for the period | Browsers rename duplicate downloads; Skiley file names do not include the period. | 2026-11-04 |
+| D-24 | Playlist line order | "Artist - Song" | Mike's Soundiiz test: both orders imported to Spotify correctly; Artist - Song matches the original brief. | 2026-11-04 |
+| D-26 | Extra test exports | Synthetic personas generated from Deezer genre charts (scripts/make_synthetic_fixtures.py) instead of friends' exports: mainstream, country_classic, narrow_electronic, heavy | No privacy question; reproducible; covers tastes unlike Mike's. Real friends' exports can still be added later with consent. | 2026-11-04 |
 
 ## Open
 
 | ID | Question | Options | Recommendation |
 |---|---|---|---|
-| D-24 | Line order for the import tools | "Artist - Song" or "Song - Artist" | Decide from the Phase 0 paste test. |
-| D-25 | Profile cap for small libraries | Always try for several profiles, or allow 1-2 | Allow 1-2; a mainstream listener should not get 8 thin profiles. Confirm with friends' exports. |
-| D-26 | Friends' exports in the repo | Public with consent, or a private fixtures folder outside the repo | Ask each friend. |
+| D-25 | Profile cap for small libraries | Always try for several profiles, or allow 1-2 | Allow 1-2; the narrow_electronic persona is the test case. |
 
 ## Superseded
 
