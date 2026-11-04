@@ -10,8 +10,9 @@ Cache entry per artist (JSON):
     mbid       str
     tags       [[tag, weight], ...]
     similar    [[name, match], ...]
-    parts_at   {"info": ts, "tags": ts, "similar": ts}  - when each part was fetched
-Tags never expire. Listener counts and similar artists refresh after REFRESH_DAYS.
+    top_tracks [[title, listeners], ...]  - only for artists that end up in a playlist (part "top_tracks")
+    parts_at   {"info": ts, "tags": ts, "similar": ts, "top_tracks": ts}  - when each part was fetched
+Tags never expire. Listener counts, similar artists and top tracks refresh after REFRESH_DAYS.
 """
 from __future__ import annotations
 
@@ -22,14 +23,16 @@ from typing import Callable, Protocol
 from .text import artist_key
 
 REFRESH_DAYS = 90
-PARTS = ("info", "tags", "similar")
-EXPIRING = {"info", "similar"}
+PARTS = ("info", "tags", "similar")            # the default parts; "top_tracks" is fetched on request only
+EXPIRING = {"info", "similar", "top_tracks"}
+TOP_TRACKS = 10
 
 
 class Fetcher(Protocol):
     def artist_info(self, name: str) -> dict: ...
     def artist_tags(self, name: str) -> list: ...
     def artist_similar(self, name: str) -> list: ...
+    def artist_top_tracks(self, name: str, limit: int = TOP_TRACKS) -> list: ...
 
 
 class Cache(Protocol):
@@ -100,6 +103,9 @@ def enrich_artists(names: list[str], cache: Cache, fetcher: Fetcher,
                 if "similar" in todo:
                     entry["similar"] = fetcher.artist_similar(name)
                     entry["parts_at"]["similar"] = now()
+                if "top_tracks" in todo:
+                    entry["top_tracks"] = fetcher.artist_top_tracks(name, TOP_TRACKS)
+                    entry["parts_at"]["top_tracks"] = now()
                 entry.pop("error", None)
                 cache.put(keys[name], entry.get("name") or name, entry)
                 cached[keys[name]] = entry

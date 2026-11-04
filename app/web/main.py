@@ -183,6 +183,16 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
             return render(request, "_job_status.html", {"job": None})
         return render(request, "_job_status.html", {"job": job, "position": runner.position(jid)})
 
+    @app.get("/jobs/{jid}/playlists/{pid}.txt")
+    def download_playlist(jid: str, pid: str):
+        job = load_job(jid)
+        pl = next((p for p in job["result"].get("playlists") or [] if p["profile"] == pid), None)
+        if not pl:
+            raise HTTPException(404, "No such playlist.")
+        safe = "".join(ch if ch.isalnum() else "_" for ch in pl["name"]).strip("_") or pid
+        return Response(pl["text"] + "\n", media_type="text/plain; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="playlist_forge_{safe}.txt"'})
+
     return app
 
 

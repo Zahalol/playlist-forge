@@ -18,9 +18,9 @@
 <article aria-busy="true">Your profiles are final. Finding artists you might like next...</article>
 {% elif live %}
 <article>
-  <strong>{% if job.stage == "quick" %}Looking up your top artists{% elif job.stage == "borrow" %}Finishing touches: checking artists with few genre tags{% elif job.stage == "recs" %}Finding artists you might like{% else %}Filling in the rest of your artists{% endif %}</strong>
+  <strong>{% if job.stage == "quick" %}Looking up your top artists{% elif job.stage == "borrow" %}Finishing touches: checking artists with few genre tags{% elif job.stage == "recs" %}Finding artists you might like{% elif job.stage == "songs" %}Picking songs for your playlists{% else %}Filling in the rest of your artists{% endif %}</strong>
   <progress value="{{ job.done }}" max="{{ job.total or 1 }}"></progress>
-  <small>{{ job.done }} of {{ job.total }}{% if job.stage == "quick" %} artists. Your first profiles appear when this bar is full.{% elif job.stage == "recs" %} candidates checked. Recommendations appear when this bar is full.{% else %}. Your profiles below will sharpen when this finishes.{% endif %}</small>
+  <small>{{ job.done }} of {{ job.total }}{% if job.stage == "quick" %} artists. Your first profiles appear when this bar is full.{% elif job.stage == "recs" %} candidates checked. Then we pick songs, and your playlists appear.{% elif job.stage == "songs" %} artists checked. Your recommendations and playlists appear when this bar is full.{% else %}. Your profiles below will sharpen when this finishes.{% endif %}</small>
 </article>
 {% endif %}
 
@@ -45,6 +45,51 @@
 {% endif %}
 {% elif job.result.get("recs_error") %}
 <p><small>We could not build recommendations this time. Your profiles above are complete; please try a new build later.</small></p>
+{% endif %}
+
+{% set playlists = job.result.get("playlists") or [] %}
+{% if playlists %}
+<h3 id="playlists">Your playlists</h3>
+<p><small>One playlist per profile: a few of your own favourites to set the tone, new picks from the artists above, and deep cuts from artists you play only now and then. Copy the text, or download it, then import it into Spotify with the steps below.</small></p>
+{% for pl in playlists %}
+<article class="playlist">
+  <header>
+    <strong>{{ pl.name }}</strong> <small>{{ pl.size }} songs{% if pl.short %} (all we could find for this profile){% endif %}</small>
+    <span class="actions">
+      <button type="button" class="outline secondary copy" data-target="pl-{{ pl.profile }}">Copy</button>
+      <a role="button" class="outline secondary" href="/jobs/{{ job.id }}/playlists/{{ pl.profile }}.txt" download>Download .txt</a>
+    </span>
+  </header>
+  <textarea id="pl-{{ pl.profile }}" readonly rows="6">{{ pl.text }}</textarea>
+  <details>
+    <summary>Why these songs</summary>
+    <ul>
+    {% for it in pl["items"] %}
+      <li><small><strong>{{ it.artist }} - {{ it.title }}</strong>: {{ it.why }}</small></li>
+    {% endfor %}
+    </ul>
+  </details>
+</article>
+{% endfor %}
+<article>
+  <h4>Add a playlist to Spotify</h4>
+  <p>Playlist Forge never sees your Spotify login. A free import tool moves the text into your account:</p>
+  <ol>
+    <li>Copy one playlist above (or download its .txt file).</li>
+    <li>Open <a href="https://soundiiz.com/" target="_blank" rel="noopener">Soundiiz</a>, sign in, and under <em>Import playlist</em> choose <em>From text</em> (free plan: 200 songs per playlist).</li>
+    <li>Paste the lines, keep the format as "Artist - Title", give the playlist a name, and confirm.</li>
+    <li>Choose Spotify as the destination and sign in to Spotify on Soundiiz. The playlist appears in your library within a minute; a few lines may not match and are listed by Soundiiz.</li>
+  </ol>
+  <p><small>Alternative: <a href="https://www.tunemymusic.com/" target="_blank" rel="noopener">TuneMyMusic</a> (free plan: 500 songs per account in total), choose "Upload file" and the .txt download.</small></p>
+</article>
+<script>
+document.querySelectorAll("button.copy").forEach(function (b) {
+  b.addEventListener("click", function () {
+    var ta = document.getElementById(b.dataset.target);
+    navigator.clipboard.writeText(ta.value).then(function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy"; }, 1500); });
+  });
+});
+</script>
 {% endif %}
 
 {% if profiles %}
@@ -72,8 +117,7 @@
 <p><small>Didn't fit a profile:
 {% for u in job.result.unresolved %}{% if u is mapping %}{{ u.artist }} ({{ u.reason }}){% else %}{{ u }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</small></p>
 {% endif %}
-{% if recs %}<p><small>Playlists for each profile are the next build step.</small></p>
-{% elif not live %}<p><small>Recommendations and playlists for each profile are the next build step.</small></p>{% endif %}
+{% if playlists %}<p><small><a href="#playlists">Back to your playlists</a></small></p>{% endif %}
 {% endif %}
 
 {% if summary %}

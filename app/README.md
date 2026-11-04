@@ -13,7 +13,7 @@ app/
     taxonomy.json/.py    tag families and tag matching
     profile.py           taste profiles: family mix, merge/split, names, descriptions
     recommend.py         artist recommendations: candidates from similar lists, dampener, quotas, fit bar
-    playlist.py          (Phase 4) playlists + "Artist - Song" text
+    playlist.py          one playlist per profile (anchors, new picks, deep cuts), title cleaning, "Artist - Song" text
   clients/
     lastfm.py            Last.fm API client: 1 request/second global throttle, retries
   db.py                  SQLAlchemy Core: artist_cache, jobs (Postgres or SQLite)

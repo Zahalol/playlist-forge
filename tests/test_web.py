@@ -99,6 +99,18 @@ def test_build_runs_quick_then_full(unlabeled_files):
     page = c.get(f"/jobs/{jid}/status").text
     assert "(complete)" in page and "every 2s" not in page               # polling stops when done
     assert "Artists you might like" in page and "Explore:" in page and 'class="fit"' in page
+    # playlists: top tracks were fetched for recommended and lightly listened artists, one playlist per profile
+    pls = job["result"]["playlists"]
+    assert [p["profile"] for p in pls] == ["p1"] and pls[0]["size"] == 20
+    roles = [it["role"] for it in pls[0]["items"]]
+    assert roles[:3] == ["anchor"] * 3 and "new" in roles and "deep_cut" in roles
+    tt = [x for x in fake.calls if x[0] == "top_tracks"]
+    assert tt and len(tt) <= 120 and any("friend" in x[1] for x in tt) and any("friend" not in x[1] for x in tt)
+    assert "Your playlists" in page and "Soundiiz" in page and 'id="pl-p1"' in page
+    txt = c.get(f"/jobs/{jid}/playlists/p1.txt")
+    assert txt.status_code == 200 and txt.text.count("\n") == 20 and " - " in txt.text.split("\n")[0]
+    assert "attachment" in txt.headers["content-disposition"]
+    assert c.get(f"/jobs/{jid}/playlists/nope.txt").status_code == 404
 
 
 def test_top_artists_go_first(unlabeled_files):

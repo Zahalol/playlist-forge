@@ -11,7 +11,8 @@ finished work, decisions, and lessons. Current state and open items live in HAND
 - `app/pipeline/recommend.py`: candidates from the cached similar lists, strongest-8-links score with breadth bonus, profile attribution, popularity dampener with a listener-relative knee, household side list, per-profile quotas, balanced order, 1-5 fit bars, "because you listen to" reasons. Two-step API (`candidates()` then `rank()`) so the job can fetch listener counts in between.
 - Job stage `recs` (third queue priority) looks up listener counts for up to 150 candidates per job; the results page shows "Artists you might like" with fit bars, an "Explore" line per profile and the big names skipped. A failure inside the stage keeps the profiles (`recs_error`).
 - `scripts/recs_report.py` prints the lists for Mike and the four personas from the local cache, with `--fetch N` to look up listener counts through the real client. Listener counts for the top 150 candidates of all five fixture listeners are now in the local cache (750 calls).
-- `tests/fakes.FakeLastFM` has `artist_top_tracks`. 75 tests pass (14 new for recommend, 2 new web-flow tests).
+- `tests/fakes.FakeLastFM` has `artist_top_tracks`. 75 tests passed at this point (14 new for recommend, 2 new web-flow tests).
+- Second half of the session (Phase 4b): `top_tracks` cache part; `app/pipeline/playlist.py` (anchors, new picks, deep cuts, title cleaning, "Artist - Song" text); `songs` job step after the recs lookups (up to 120 top-track calls); playlist cards with Copy and Download .txt, "Why these songs", and the Soundiiz/TuneMyMusic steps on the results page. 83 tests pass. Live build of Mike's export in the browser pane: seven 20-song playlists, all titles cleaned, no errors; `artist_top_tracks` works live.
 
 **Decided**
 - D-32: popularity calibration on Last.fm listener counts (knee = median of the user's artists clamped to 500K-2.5M; household = max(4M, 3 x knee)).
@@ -21,6 +22,8 @@ finished work, decisions, and lessons. Current state and open items live in HAND
 - Fixture listeners' median artist: Mike 971K, country_classic 796K, narrow_electronic 691K, mainstream 2.0M, heavy 2.1M. The top-40 median is a poor anchor (Mike's is 1.7M because of Green Day and Taylor Swift).
 - Similar-artist lists carry band members and side projects (Jerry Garcia for Grateful Dead, Rivers Cuomo for Weezer, John Fogerty for CCR). They are fair recommendations but feel obvious; a future "member of" filter would need MusicBrainz relations.
 - Without listener counts almost no candidate has one in the cache (9 of Mike's top 150), so the lookup stage is required for the dampener to do anything.
+- Restricting listener lookups to the 200 strongest candidates matters: without the window every build spent the full 150 calls further down the list even with a warm cache.
+- Last.fm top tracks are good playlist material: the first track is the signature song in nearly every case checked (Heather, As It Was, Sweet Home Alabama, Cover Me Up); the deep-cuts rule (skip tracks already in the user's lists) worked without special cases.
 
 ## 2026-11-04 - Session unknown (first logged session; covers everything from the proof of concept to Phase 3)
 

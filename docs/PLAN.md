@@ -81,11 +81,13 @@ See ARCHITECTURE.md "Recommendation approach" for the design and the Last.fm cal
 - [x] `app/pipeline/recommend.py` (pure): candidates from the cached similar lists, the POC scoring (strongest-8-links, breadth bonus, popularity dampener, household side list, per-profile quotas, balanced order), profile per candidate, 1-5 fit bar from quantiles, "because you listen to" reasons. (2026-11-04)
 - [x] Dampener and household threshold recalibrated on Last.fm listener counts (D-32) with `scripts/recs_report.py` on all five fixture listeners. (2026-11-04)
 - [x] Recommendation job stage `recs`: listener counts for up to 150 candidates, recommendations shown on the results page with per-profile "Explore" lists and the big-names side list. (2026-11-04)
-- [ ] Last.fm `artist_top_tracks` live (exists, untested live); enrichment part for top tracks of recommended artists within a call budget.
-- [ ] `app/pipeline/playlist.py` (pure): one playlist per profile (default 20, max 50): a few anchors the user loves, new picks (max 1-2 per artist), deep cuts from lightly listened artists; "Artist - Song" text (D-24) with " - Live", " - Remastered ...", "(feat. ...)" stripped.
-- [ ] Results page: playlist cards with Copy and Download .txt, Soundiiz walkthrough (D-19), TuneMyMusic as the alternative; anonymous thumbs up/down (D-13) if time allows. (Recommendations per profile and overall: done 2026-11-04.)
-- [ ] Tests: pure-function tests with made-up data (recommend: done), a web-flow test with the fake fetcher extended for top tracks (fake has top tracks; the flow test waits for playlist.py).
-- Done when: a real playlist goes from the results page into Spotify through Soundiiz end to end.
+- [x] Top tracks: `top_tracks` cache part, fetched in the `songs` stage for up to 120 recommended and lightly listened artists per job; `artist_top_tracks` verified live. (2026-11-04)
+- [x] `app/pipeline/playlist.py` (pure): one playlist per profile (default 20, max 50): 3 anchors, new picks (one song per artist, a second only when short), up to 4 deep cuts; "Artist - Song" text (D-24) with " - Live", " - 2019 Remix", "(feat. ...)" stripped. (2026-11-04)
+- [x] Results page: playlist cards with Copy and Download .txt, Soundiiz walkthrough (D-19), TuneMyMusic as the alternative. (2026-11-04)
+- [ ] Anonymous thumbs up/down (D-13) if time allows.
+- [x] Tests: pure-function tests with made-up data and a web-flow test through recommendations and playlists (83 tests). (2026-11-04)
+- [ ] Playlist size control on the results page (20 default; the builder accepts 5-50 but the page has no control yet).
+- Done when: a real playlist goes from the results page into Spotify through Soundiiz end to end. Mike's step: not done yet.
 
 ### Phase 5 - Friends launch polish
 - [ ] Guide screenshots, about and privacy page with attribution for Last.fm, Deezer, Skiley, Soundiiz.

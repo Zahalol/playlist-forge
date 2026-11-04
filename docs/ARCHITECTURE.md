@@ -90,16 +90,21 @@ Built in `app/pipeline/recommend.py` (artists; songs and playlists follow in `pl
 
 ## Playlist text and the Spotify hand-off
 
-- Line format: the one confirmed in Phase 0 testing ("Artist - Song" expected). Version suffixes and "(feat. ...)" stripped from the text; originals kept in the data.
-- Soundiiz (primary): free plan allows 200 tracks per playlist with unlimited playlists and text import. The guide walks through paste, choose Spotify, sign in, confirm.
-- TuneMyMusic (alternative): free plan allows 500 tracks per account in total.
+Built in `app/pipeline/playlist.py`; ported from the proof of concept's "Recommended Playlists".
+
+- One playlist per profile, 20 songs by default (5 to 50): 3 anchors (the user's own top songs by the profile's artists, one per artist), then new picks (the top Last.fm track of each recommended artist in the profile's own list, one song per artist; a second song only when the list runs short), then up to 4 deep cuts (top tracks the user has not surfaced, from the profile's lightest-listened artists, taste weight under 0.4). Short lists are filled with more of the user's own songs and flagged `short`.
+- Top tracks come from the `songs` job stage: `artist_top_tracks` for the first 14 recommended artists of each profile plus up to 20 lightly listened artists, 120 calls at most per job (about 2 minutes cold). The cache part `top_tracks` expires like listener counts.
+- Line format "Artist - Song" (D-24). `clean_title` strips version suffixes (" - Live ...", " - 2014 Remaster", " - Radio Edit", "(Remastered Version)") and featured artists ("(feat. ...)", "[feat. ...]"); originals are kept in the item data. Each item carries a role (anchor, new, deep_cut) and a one-line reason.
+- Results page: a card per playlist with the text in a read-only box, Copy (clipboard API) and Download .txt (`/jobs/{id}/playlists/{pid}.txt`), "Why these songs", and the import steps.
+- Soundiiz (primary): free plan allows 200 tracks per playlist with unlimited playlists and text import. The page walks through paste, choose Spotify, sign in, confirm.
+- TuneMyMusic (alternative): free plan allows 500 tracks per account in total; "Upload file" with the .txt.
 
 ## Jobs and state
 
 `jobs(id, created_at, expires_at, status, stage, done, total, input_json, result_json, error)` in `app/db.py`.
 - Statuses: `review` (uploaded, periods being checked), `queued`, `running`, `ready` (profiles shown, more to come), `done`, `failed`. Expired jobs are invisible and purged hourly.
-- Stages: `quick` (top 40 artists), `full` (the rest, up to 150), `borrow` (neighbour tags for tagless artists, inside the full stage), `recs` (listener counts for up to 150 recommendation candidates). Queue priority is quick, then full, then recs, so every user's first result comes before anyone's long tail.
-- Input JSON: files, overrides, artists (ordered), weights, listening (`profile.snapshot`). Result JSON: summary, artists, profiles, unresolved, preliminary, stage_done (`quick`, `full`, `recs`), recommendations, by_profile, big_names, knee, household, n_candidates, recs_error.
+- Stages: `quick` (top 40 artists), `full` (the rest, up to 150), `borrow` (neighbour tags for tagless artists, inside the full stage), `recs` (listener counts for up to 150 recommendation candidates) and `songs` (top tracks for up to 120 artists, inside the recs task). Queue priority is quick, then full, then recs, so every user's first result comes before anyone's long tail.
+- Input JSON: files, overrides, artists (ordered), weights, listening (`profile.snapshot`). Result JSON: summary, artists, profiles, unresolved, preliminary, stage_done (`quick`, `full`, `recs`), recommendations, by_profile, big_names, knee, household, n_candidates, playlists, recs_error.
 - The job id is in the URL only (cookie link-back is a TODO). On restart, unfinished jobs are re-queued at the stage after `stage_done` and resume cheaply from the cache.
 - A failure inside the recs stage keeps the profiles and marks the job done with `recs_error`; only an invalid Last.fm key fails the job.
 

@@ -7,10 +7,13 @@ Short backlog. Current state, open items and next steps live in HANDOFF.md; phas
 - Do not ask Replit's Agent to change code; its edits create saves GitHub does not have.
 - Deployment (Reserved VM) waits until recommendations and playlists work, so credits are not spent on an incomplete site.
 
-## Claude (Phase 4, in progress)
-- [ ] `app/pipeline/playlist.py` and the top-tracks enrichment part (HANDOFF "Next steps").
-- [ ] Playlist cards, Copy and Download .txt, Soundiiz walkthrough on the results page.
-- [ ] Recommendation tuning once real playlists exist: "member of" duplicates (Jerry Garcia for Grateful Dead), mashup names ("Bob Dylan and The Band"), and whether 50 overall recommendations is the right length.
+## Mike (Phase 4 done criterion)
+- [ ] Import one generated playlist into Spotify through Soundiiz from the results page and note any lines that did not match.
+
+## Claude (Phase 4 follow-ups)
+- [ ] Playlist size control (20 default, up to 50) on the results page; thumbs up/down (D-13).
+- [ ] Recommendation tuning with real playlists in hand: "member of" duplicates (Jerry Garcia for Grateful Dead), mashup names ("Bob Dylan and The Band"), one-seed musicals picks with tiny listener counts, and whether 50 overall recommendations is the right length.
+- [ ] Deployment to the Reserved VM once Mike's Soundiiz import works.
 
 ## Claude (after Phase 4)
 - [ ] Profile rename and merge on the results page (D-31).

@@ -37,6 +37,18 @@ def test_unknown_artist_cached_and_not_retried():
     assert len(fm.calls) == 1
 
 
+def test_top_tracks_part_is_fetched_only_on_request():
+    cache, fm = MemoryCache(), FakeLastFM()
+    enrich_artists(["Beach Bunny"], cache, fm)
+    assert "top_tracks" not in cache.d[artist_key("Beach Bunny")]
+    out = enrich_artists(["Beach Bunny"], cache, fm, parts=("top_tracks",))
+    assert out["Beach Bunny"]["top_tracks"][0] == ["Beach Bunny song 0", 5000]
+    assert fm.calls[-1] == ("top_tracks", "Beach Bunny") and len(fm.calls) == 4
+    enrich_artists(["Beach Bunny"], cache, fm, parts=("top_tracks",))
+    assert len(fm.calls) == 4                                           # cached; tags and similar untouched
+    assert cache.d[artist_key("Beach Bunny")]["tags"]
+
+
 def test_temporary_error_is_recorded_not_cached():
     cache, fm = MemoryCache(), FakeLastFM(broken={"Flaky"})
     out = enrich_artists(["Flaky", "Fine"], cache, fm)

@@ -20,6 +20,7 @@ from typing import Callable
 
 from app.db import ArtistCache, JobStore
 from app.pipeline.enrich import enrich_artists, neighbours_to_borrow_from, summarize
+from app.pipeline.playlist import artists_needing_top_tracks, build_playlists
 from app.pipeline.profile import build_profiles
 from app.pipeline.recommend import candidates, listener_knee, listeners_from_lookup, lookup_targets, rank
 from app.pipeline.taxonomy import load as load_taxonomy
@@ -29,6 +30,7 @@ log = logging.getLogger("playlist_forge.jobs")
 
 QUICK_N = 40
 REC_LOOKUP_BUDGET = 150        # artist.getInfo calls per job for candidates' listener counts
+TOP_TRACKS_BUDGET = 120        # artist.getTopTracks calls per job (recommended + lightly listened artists)
 PURGE_EVERY = 3600
 PRIORITY = {"quick": 0, "full": 1, "recs": 2}
 REC_FIELDS = ("name", "score", "fit", "listeners", "links", "profile", "profile_share", "because")
@@ -146,10 +148,19 @@ class JobRunner:
         def compact(x: dict) -> dict:
             return {k: x.get(k) for k in REC_FIELDS}
 
-        return {"recommendations": [compact(x) for x in res["recommendations"]],
-                "by_profile": {pid: [compact(x) for x in lst] for pid, lst in res["by_profile"].items()},
-                "big_names": [compact(x) for x in res["big_names"]],
-                "knee": res["knee"], "household": res["household"], "n_candidates": len(cands)}
+        by_profile = {pid: [compact(x) for x in lst] for pid, lst in res["by_profile"].items()}
+        out = {"recommendations": [compact(x) for x in res["recommendations"]], "by_profile": by_profile,
+               "big_names": [compact(x) for x in res["big_names"]],
+               "knee": res["knee"], "household": res["household"], "n_candidates": len(cands)}
+
+        # songs: top tracks for the recommended artists of each profile and the user's lightly listened artists
+        snap = job["input"].get("listening") or {}
+        names = artists_needing_top_tracks(profiles, by_profile, weights)[:TOP_TRACKS_BUDGET]
+        self.store.update(jid, stage="songs", done=0, total=len(names))
+        got = enrich_artists(names, self.cache, self._get_fetcher(), on_progress=progress, parts=("top_tracks",)) if names else {}
+        top_tracks = {artist_key(n): e.get("top_tracks") or [] for n, e in got.items() if e.get("found", True)}
+        out["playlists"] = build_playlists(snap, weights, profiles, by_profile, top_tracks)
+        return out
 
     def _process_recs(self, jid: str, job: dict) -> None:
         from app.clients.lastfm import LastFMKeyError
