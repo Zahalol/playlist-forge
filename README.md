@@ -10,16 +10,19 @@ How it works for a user:
 
 Your files are processed, shown back to you, and deleted after 24 hours.
 
-Status: Phase 0/1 (scaffold, classifier, parser). See `HANDOFF.md` and `docs/PLAN.md`.
+Status: Phases 0-3 done (upload, period detection, Last.fm enrichment, taste profiles). Phase 4 (recommendations and playlists) is next. See `HANDOFF.md` and `docs/PLAN.md`; history in `DEVLOG.md`.
 
 ## Repo layout
 ```
-app/pipeline/   classify -> parse -> enrich -> weights -> profile -> recommend -> playlist -> export
-app/web/        FastAPI routes, Jinja2 templates, static files
-tests/          pytest; fixtures/ holds the maintainer's own Skiley export
-docs/           PLAN, ARCHITECTURE, DECISIONS, FUTURE_IDEAS, SKILEY_PERIOD_CLASSIFIER
+app/pipeline/   classify -> parse -> weights -> enrich -> profile -> (recommend -> playlist)
+app/clients/    Last.fm client
+app/db.py       artist cache and jobs tables
+app/jobs.py     background worker
+app/web/        FastAPI routes, Jinja2 templates
+tests/          pytest; fixtures/ holds the maintainer's own Skiley export and four synthetic listeners
+docs/           PLAN, ARCHITECTURE, DECISIONS, FUTURE_IDEAS, SKILEY_PERIOD_CLASSIFIER, API evaluations
 poc/            proof of concept (reference only)
-scripts/        utilities
+scripts/        smoke tests, cache tools, fixture generators, profile report
 ```
 
 ## Run locally
@@ -27,12 +30,13 @@ scripts/        utilities
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
+copy .env.example .env      (then add your Last.fm API key)
 uvicorn app.web.main:app --reload
 pytest
 ```
 
 ## Data sources
-Last.fm and Deezer, plus the user's own Skiley genre lists. Powered by Last.fm.
+Last.fm, plus the user's own Skiley genre lists. Powered by Last.fm.
 
 ## Licence
 MIT.

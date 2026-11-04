@@ -22,8 +22,8 @@ Landing -> Demo results (optional) -> Export guide -> Upload -> Check periods ->
 ## Stack
 
 - **Backend**: Python 3.12, FastAPI, Jinja2, HTMX. No frontend build step. Pico CSS from a CDN.
-- **Database**: Replit development PostgreSQL in production; SQLite in tests. Plain SQLAlchemy Core, sync, called from a threadpool. Tables: `jobs`, `artist_cache`, `track_cache`, `feedback`.
-- **Background work**: one in-process asyncio worker task started at app startup, pulling job ids from a queue. Job state and progress live in Postgres so a restart can resume or fail them cleanly.
+- **Database**: Replit PostgreSQL (`DATABASE_URL`) on Replit; local SQLite file `data/playlist_forge.sqlite` when `DATABASE_URL` is unset; in-memory SQLite in tests. Plain SQLAlchemy Core, synchronous. Tables today: `jobs`, `artist_cache`. A `feedback` table comes with thumbs up/down (D-13).
+- **Background work**: one worker thread (`app/jobs.py`) started in the FastAPI lifespan, pulling (priority, job, stage) tasks from a priority queue. Job state and progress live in the database so a restart resumes unfinished jobs.
 - **Hosting**: Replit Reserved VM (smallest, about $15/month from Core credits). Always on; no request timeout on background work. Autoscale is not used because it has no persistent disk, times out long requests, and can stop instances that are running background work.
 - **Repo**: GitHub `playlist-forge`, imported into Replit. Pull before editing on Replit.
 
@@ -33,15 +33,17 @@ Landing -> Demo results (optional) -> Export guide -> Upload -> Check periods ->
 |---|---|---|---|
 | `classify.py` | list of (filename, text) | per file: category, period, confidence, notes; plus cross-check result | scripts/classify_spotify_lists.py (rules R1-R14, docs/SKILEY_PERIOD_CLASSIFIER.md). One website extension to R9: a single list in a category is ASSUMED to be 12 months (quick mode); two lists get a LOW-confidence guess the user must confirm. |
 | `parse.py` | classified files | tidy records {category, period, rank, item, title, artist, share}; consolidated artist and song tables | classify parse() + scripts/build_spotify_stats.py consolidation |
-| `enrich.py` | artist and track names | per artist: Last.fm tags and similar, Deezer id, fans, related, top tracks; per track: Last.fm tags and similar tracks | scripts/fetch_music_data.py (Deezer part); Last.fm is new |
-| `cache.py` | keys | cached JSON with fetched_at | new |
-| `weights.py` | consolidated tables | taste weight per artist and song | build_profiles_recs.py list_score (rank weights only; no Volt or Dec 2025 inputs) |
-| `profile.py` | weighted artists, tags, Skiley genre shares | 1-8 profiles with members, stats, name, description | new (POC used hand-picked anchors) |
-| `recommend.py` | weights, enrichment, profiles | ranked artists and songs, fit score 1-5, reasons, household side list | build_profiles_recs.py sections 3-4 |
-| `playlist.py` | profiles, recs | playlists as rows and "Artist - Song" text | build_profiles_recs.py playlist section |
-| `export.py` | any of the above | CSV, txt, JSON | new |
+| `weights.py` | consolidated tables | recency-weighted taste weight per artist (songs add 35% to their artist) | build_profiles_recs.py list_score (rank weights only) |
+| `enrich.py` | artist names, a fetcher, a cache | per artist: Last.fm listeners, tags, similar artists (cache-first; optional `parts`); `neighbours_to_borrow_from`; `summarize` | scripts/fetch_music_data.py, rewritten for Last.fm |
+| `taxonomy.py` + `taxonomy.json` | tags | family id and strength per tag; family mix per artist | new |
+| `profile.py` | `snapshot()` of the listening, weights, cache entries, neighbour lookup | 1-8 profiles (members, shares, trend, styles, songs, name, description) plus unplaced artists with reasons | new (POC used hand-picked anchors) |
+| `recommend.py` (Phase 4) | weights, enrichment, profiles | ranked artists and songs, fit score 1-5, reasons, household side list | build_profiles_recs.py sections 3-4 |
+| `playlist.py` (Phase 4) | profiles, recs | playlists as rows and "Artist - Song" text | build_profiles_recs.py playlist section |
+| `export.py` (later) | any of the above | CSV, txt, JSON | new |
 
 Every module is a pure function over plain dicts or dataclasses so tests run without the web app or network.
+
+Outside the pipeline: `app/clients/lastfm.py` (Last.fm client, global throttle, retries), `app/db.py` (database tables, `ArtistCache`, `JobStore`), `app/jobs.py` (worker thread and job stages), `app/web/main.py` (routes, `create_app` factory).
 
 ## Data sources (MVP)
 
@@ -55,11 +57,11 @@ Planned for v0.2 as a slow background enricher: MusicBrainz (MBIDs, tags, countr
 
 ## Caching
 
-- `artist_cache(key, display_name, deezer_id, fans, lastfm_json, deezer_json, fetched_at)`; key = normalised name (NFKC, casefold, straight quotes, "&" to "and", leading "the" dropped, unicode dashes to "-").
-- `track_cache(key, artist_key, lastfm_json, fetched_at)`; key = normalised "title - artist" with version suffixes stripped.
-- Refresh: Last.fm tags never expire in MVP; Deezer fans and related lists refresh after 90 days.
-- Pre-warm from poc/output/music_cache.json (Deezer data for about 290 artists).
-- The cache holds facts about artists and songs only, never who asked.
+- `artist_cache(key, name, data, fetched_at)` in `app/db.py`; key = `text.artist_key(name)` (NFKC, casefold, straight quotes, "&" to "and", unicode dashes to "-", leading "the" dropped). `data` is JSON: found, name (Last.fm's corrected name), mbid, listeners, tags [[tag, weight]], similar [[name, match]], parts_at {info, tags, similar}.
+- Refresh: tags never expire; listeners and similar artists refresh after 90 days. Neighbour artists fetched only for tag borrowing hold tags only.
+- No track cache yet; Phase 4 adds top tracks (likely as a "toptracks" part on the artist entry).
+- Pre-warm: `scripts/prewarm_cache.py` loads `data/lastfm_smoke.json`; `scripts/enrich_fixtures.py` fills the local cache with every fixture listener's artists (about 550 artists locally as of 2026-11-04). The Replit database has its own cache, filled by real use.
+- The cache holds facts about artists only, never who asked.
 
 ## Profiling approach
 
@@ -67,20 +69,24 @@ Implemented in `app/pipeline/taxonomy.py` + `taxonomy.json` and `app/pipeline/pr
 
 1. `taxonomy.json` maps 16 families (musicals, emo and pop punk, metal, hip-hop, R&B and soul, electronic, latin, reggae and ska, jam band and bluegrass, Americana/country/folk, classic rock, indie and alternative, pop, jazz and blues, classical, Christian) to tag keywords. Specific tags count fully, broad one-word genres ("folk", "pop") 0.6, hint words ("80s", "acoustic") 0.35, noise ("seen live", places) is ignored. A "contains" rule catches variants.
 2. Each artist's family mix = 65% its own Last.fm tags + 35% the tags of its 10 most similar artists that are in the cache, multiplied by a prior from the user's Skiley genre shares. Artists whose own tags say nothing borrow entirely from neighbours; the job fetches tags for up to 8 neighbours of each such artist ("borrow" stage). Names containing "Broadway", "Cast", "Company" lean to musicals.
-3. Each artist joins its strongest family. Families under 3% of taste weight or with one artist dissolve into members' next-best families. A family over 40% splits in two by tag similarity (weighted 2-means) when both halves hold 30%+. Maximum 8 profiles. Artists with no usable data are listed as unresolved.
-4. Names: the family label, or the two leading styles for split families ("Midwest Emo & Math Rock"). Descriptions are template sentences: share, trend (4-week share vs 12-month share), core artists, the most specific styles, how well known the artists are (median Last.fm listeners), signature songs. An LLM rewrite is a future flag.
+3. Each artist joins its strongest family. Families under 3% of taste weight or with one artist dissolve into members' next-best families. A family over 40% splits in two by tag similarity (weighted 2-means) when each half holds at least 8% of the listener's total weight. Maximum 8 profiles. Artists left over are listed as unplaced with a reason ("not enough genre data" or "your only hip-hop artist").
+4. Names: the family label when its key tags appear among the profile's leading styles (or the styles are only broad words); otherwise the two leading styles ("Punk Rock & Horror Punk"); split halves use the styles the other half does not share ("Techno & Electro House" vs "UK Garage & Electro"). Descriptions are template sentences: share, trend (4-week share vs 12-month share), core artists, the most specific styles, how well known the artists are (median Last.fm listeners: under 150k "under-the-radar", over 2M "big, well-known names"), signature songs (one per artist first). An LLM rewrite is a future flag.
 5. Quick stage shows preliminary profiles from the top 40 artists; the full stage replaces them.
 6. Rename and merge by the user: after Phase 4 (D-31).
 
 ## Recommendation approach
 
-- Taste weight: rank score per list (1 - (rank - 1) / 50), weighted 4 weeks 1.0, 6 months 0.9, 12 months 0.7. Top songs add 35% of their score to their artist.
-- Candidates: similar artists from Last.fm and Deezer that are not in any of the user's lists (with a name-containment check).
-- Score: sum of the 8 strongest (taste weight x similarity) links, times a small breadth bonus, times a popularity dampener (fans under 150k = 1.0, 1M about 0.45, 10M about 0.23). Artists with 2M+ fans go to the "big names you skipped" list.
-- Display: a 1 to 5 fit bar from score quantiles, not a percentage.
+Planned for Phase 4 (not built yet). The proof of concept's scoring in `poc/scripts/build_profiles_recs.py` is the reference; its popularity numbers were Deezer fan counts and must be recalibrated on Last.fm listener counts.
+
+- Taste weight: `weights.artist_weights` (already built).
+- Candidates: artists in the cached Last.fm similar lists of the user's artists (up to 50 each, already in the cache, no extra calls) that are not in any of the user's lists (with the name-containment check from the POC, using `artist_key`).
+- Score: sum of the 8 strongest (taste weight x Last.fm match) links, times a small breadth bonus, times a popularity dampener. Profile fit: the profile that contributes most of a candidate's score.
+- Popularity calibration (to decide in Phase 4): Last.fm listener counts run higher than Deezer fans (Coldplay 9.3M, Olivia Rodrigo 3.4M, Beach Bunny 1.7M, The Front Bottoms 971K, Tigers Jaw 528K, Free Throw 393K). Candidate listener counts need artist.getInfo calls, so only the top-scoring candidates are looked up (budget about 150 per job).
+- Household names above the calibrated threshold go to a "big names you skipped" list.
+- Display: a 1 to 5 fit bar from score quantiles, not a percentage (D-20).
 - Order: balanced across profiles; each profile gets a minimum number of slots.
-- Songs: Last.fm similar tracks for the user's top songs, top tracks of recommended artists (max 2 per artist), deep cuts from lightly listened artists.
-- Budget: at most about 150 candidate artists enriched per run.
+- Songs: artist.getTopTracks for recommended artists (max 2 per artist in the overall list), deep cuts from the user's lightly listened artists; track.getSimilar only as a bonus for older songs (empty for recent releases).
+- Calls: top tracks for about 40-60 recommended artists plus listener counts for about 150 candidates means a third job stage of roughly 3-4 minutes for a first-time user, shorter with a warm cache.
 
 ## Playlist text and the Spotify hand-off
 
@@ -90,8 +96,11 @@ Implemented in `app/pipeline/taxonomy.py` + `taxonomy.json` and `app/pipeline/pr
 
 ## Jobs and state
 
-`jobs(id, created_at, status, stage, progress_done, progress_total, input_json, result_json, error, expires_at)`.
-Statuses: queued, classifying, enriching, profiling, recommending, done, failed, expired. The job id is in the URL and a cookie. Results and inputs are deleted after 24 hours. On restart, running jobs resume from the cache (cheap) or are marked failed with a "try again" button.
+`jobs(id, created_at, expires_at, status, stage, done, total, input_json, result_json, error)` in `app/db.py`.
+- Statuses: `review` (uploaded, periods being checked), `queued`, `running`, `ready` (quick stage done, preliminary profiles shown), `done`, `failed`. Expired jobs are invisible and purged hourly.
+- Stages: `quick` (top 40 artists), `full` (the rest, up to 150), `borrow` (neighbour tags for tagless artists, inside the full stage). Phase 4 adds a recommendation stage.
+- Input JSON: files, overrides, artists (ordered), weights, listening (`profile.snapshot`). Result JSON: summary, artists, profiles, unresolved, preliminary, stage_done.
+- The job id is in the URL only (cookie link-back is a TODO). On restart, unfinished jobs are re-queued and resume cheaply from the cache.
 
 ## Privacy
 

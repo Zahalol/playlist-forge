@@ -7,4 +7,6 @@ pytest, no network.
 
 - `fixtures/synthetic/<persona>/` - fake Skiley exports for four listeners unlike Mike: `mainstream` (pop, rap, R&B), `country_classic` (country, classic rock, folk), `narrow_electronic` (almost only dance, the small-library case), `heavy` (metal, alternative). Generated from real Deezer genre charts by `scripts/make_synthetic_fixtures.py` (needs network; deterministic for the same charts). Suffix -> true period: none = 12 months, `__1_` = 6 months, `__2_` = 4 weeks. Re-running the script against newer charts changes the files; rerun the tests afterwards.
 
+Test files (59 tests as of 2026-11-04): `test_classify.py`, `test_parse.py`, `test_synthetic.py` (personas), `test_enrich.py` (enrichment, cache, job store, Last.fm client against mocked HTTP), `test_profile.py` (taxonomy and profiles on made-up listeners), `test_web.py` (upload to profiles through the app with `fakes.FakeLastFM`). No test uses Last.fm data or the network; real-data profile checks are done by hand with `scripts/profile_report.py` against the local cache.
+
 Mike's export is public by choice (DECISIONS D-21). Site users' data is never added here. Real friends' exports go under `fixtures/<alias>/` only with their consent (D-26).

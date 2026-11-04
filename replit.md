@@ -7,9 +7,9 @@ Replit, run `git pull origin main`. Read `CLAUDE.md`, `HANDOFF.md` and `docs/` f
 ## Run and test
 - Stack: Python 3.12, FastAPI, Jinja2, HTMX, SQLAlchemy. Keep the existing `app/`, `tests/`, `scripts/` and `poc/` layout.
 - Dependencies are pinned in `requirements.txt`: `pip install -r requirements.txt` after pulling.
-- Run button starts the `Start application` workflow: `python -m uvicorn app.web.main:app --host 0.0.0.0 --port 5000 --reload`.
+- The `Start application` workflow (`python -m uvicorn app.web.main:app --host 0.0.0.0 --port 5000 --reload`) starts by itself when the Preview tab opens; the newer workspace layout has no Run button.
 - Preview: landing page; `/upload` for Skiley files; `/health` returns `ok`.
-- Tests: `python -m pytest` (44 tests, no network).
+- Tests: `python -m pytest` (59 tests, no network).
 
 ## Configuration
 - `LASTFM_API_KEY` in Secrets is required for "Build my profiles" (Last.fm lookups). Never put credentials in `.replit` or source control.
