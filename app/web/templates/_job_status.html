@@ -4,6 +4,8 @@
 {% set live = job.status in ("queued", "running", "ready") %}
 {% set summary = job.result.get("summary") %}
 {% set profiles = job.result.get("profiles") or [] %}
+{% set recs = job.result.get("recommendations") or [] %}
+{% set by_profile = job.result.get("by_profile") or {} %}
 
 {% if job.status == "failed" %}
 <article style="border-left: 4px solid #c62828">
@@ -12,12 +14,37 @@
 </article>
 {% elif job.status == "queued" %}
 <article aria-busy="true">Waiting to start{% if position %} ({{ position }} ahead of you){% endif %}...</article>
+{% elif live and job.status == "ready" and job.result.get("stage_done") == "full" %}
+<article aria-busy="true">Your profiles are final. Finding artists you might like next...</article>
 {% elif live %}
 <article>
-  <strong>{% if job.stage == "quick" %}Looking up your top artists{% elif job.stage == "borrow" %}Finishing touches: checking artists with few genre tags{% else %}Filling in the rest of your artists{% endif %}</strong>
+  <strong>{% if job.stage == "quick" %}Looking up your top artists{% elif job.stage == "borrow" %}Finishing touches: checking artists with few genre tags{% elif job.stage == "recs" %}Finding artists you might like{% else %}Filling in the rest of your artists{% endif %}</strong>
   <progress value="{{ job.done }}" max="{{ job.total or 1 }}"></progress>
-  <small>{{ job.done }} of {{ job.total }}{% if job.stage == "quick" %} artists. Your first profiles appear when this bar is full.{% else %}. Your profiles below will sharpen when this finishes.{% endif %}</small>
+  <small>{{ job.done }} of {{ job.total }}{% if job.stage == "quick" %} artists. Your first profiles appear when this bar is full.{% elif job.stage == "recs" %} candidates checked. Recommendations appear when this bar is full.{% else %}. Your profiles below will sharpen when this finishes.{% endif %}</small>
 </article>
+{% endif %}
+
+{% if recs %}
+<h3>Artists you might like</h3>
+<p><small>Picked from the artists that listeners of your artists also play, balanced across your profiles. Bars show how strongly each one fits your listening (5 is strongest). Big names that you have skipped are listed separately below.</small></p>
+<figure><table class="recs">
+  <thead><tr><th>Fit</th><th>Artist</th><th>Profile</th><th>Because you listen to</th></tr></thead>
+  <tbody>
+  {% for r in recs %}
+    <tr>
+      <td><span class="fit" title="Fit {{ r.fit }} of 5">{% for i in range(5) %}<i{% if i < r.fit %} class="on"{% endif %}></i>{% endfor %}</span></td>
+      <td>{{ r.name }}</td>
+      <td><small>{% for p in profiles if p.id == r.profile %}{{ p.name }}{% endfor %}</small></td>
+      <td><small>{{ r.because | join(", ") }}</small></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></figure>
+{% if job.result.get("big_names") %}
+<p><small>Big names you have skipped: {% for b in job.result.big_names %}{{ b.name }}{% if not loop.last %}, {% endif %}{% endfor %}.</small></p>
+{% endif %}
+{% elif job.result.get("recs_error") %}
+<p><small>We could not build recommendations this time. Your profiles above are complete; please try a new build later.</small></p>
 {% endif %}
 
 {% if profiles %}
@@ -31,6 +58,9 @@
     <div class="sharebar"><span style="width: {{ (p.share * 100) | round | int }}%"></span></div>
   </header>
   <p>{{ p.description }}</p>
+  {% if by_profile.get(p.id) %}
+  <p><small><strong>Explore:</strong> {% for r in by_profile[p.id][:10] %}{{ r.name }}{% if not loop.last %}, {% endif %}{% endfor %}</small></p>
+  {% endif %}
   <details>
     <summary>All {{ p.artists | length }} artists</summary>
     <p><small>{{ p.artists | join(", ") }}</small></p>
@@ -42,7 +72,8 @@
 <p><small>Didn't fit a profile:
 {% for u in job.result.unresolved %}{% if u is mapping %}{{ u.artist }} ({{ u.reason }}){% else %}{{ u }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</small></p>
 {% endif %}
-<p><small>Recommendations and playlists for each profile are the next build step.</small></p>
+{% if recs %}<p><small>Playlists for each profile are the next build step.</small></p>
+{% elif not live %}<p><small>Recommendations and playlists for each profile are the next build step.</small></p>{% endif %}
 {% endif %}
 
 {% if summary %}

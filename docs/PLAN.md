@@ -78,12 +78,13 @@ The initial push covers Phases 0 to 4. Phases 2 and 3 are the bulk of the work: 
 
 ### Phase 4 - Recommendations and playlists (next)
 See ARCHITECTURE.md "Recommendation approach" for the design and the Last.fm calibration data.
-- [ ] `app/pipeline/recommend.py` (pure): candidates from the cached similar lists, port the POC scoring (strongest-8-links, breadth bonus, popularity dampener, household side list, per-profile quotas, balanced order), assign each candidate to a profile, 1-5 fit bar from score quantiles, "because you listen to" reasons.
-- [ ] Recalibrate the dampener and household threshold on Last.fm listener counts; check on all five fixture listeners with a report script (like `scripts/profile_report.py`).
-- [ ] Last.fm client: use `artist_top_tracks` (exists, untested live); enrichment part for top tracks; a recommendation job stage that fetches listener counts for the top candidates and top tracks for recommended artists within a call budget.
+- [x] `app/pipeline/recommend.py` (pure): candidates from the cached similar lists, the POC scoring (strongest-8-links, breadth bonus, popularity dampener, household side list, per-profile quotas, balanced order), profile per candidate, 1-5 fit bar from quantiles, "because you listen to" reasons. (2026-11-04)
+- [x] Dampener and household threshold recalibrated on Last.fm listener counts (D-32) with `scripts/recs_report.py` on all five fixture listeners. (2026-11-04)
+- [x] Recommendation job stage `recs`: listener counts for up to 150 candidates, recommendations shown on the results page with per-profile "Explore" lists and the big-names side list. (2026-11-04)
+- [ ] Last.fm `artist_top_tracks` live (exists, untested live); enrichment part for top tracks of recommended artists within a call budget.
 - [ ] `app/pipeline/playlist.py` (pure): one playlist per profile (default 20, max 50): a few anchors the user loves, new picks (max 1-2 per artist), deep cuts from lightly listened artists; "Artist - Song" text (D-24) with " - Live", " - Remastered ...", "(feat. ...)" stripped.
-- [ ] Results page: recommendations per profile and overall, playlist cards with Copy and Download .txt, Soundiiz walkthrough (D-19), TuneMyMusic as the alternative; anonymous thumbs up/down (D-13) if time allows.
-- [ ] Tests: pure-function tests with made-up data, a web-flow test with the fake fetcher extended for top tracks.
+- [ ] Results page: playlist cards with Copy and Download .txt, Soundiiz walkthrough (D-19), TuneMyMusic as the alternative; anonymous thumbs up/down (D-13) if time allows. (Recommendations per profile and overall: done 2026-11-04.)
+- [ ] Tests: pure-function tests with made-up data (recommend: done), a web-flow test with the fake fetcher extended for top tracks (fake has top tracks; the flow test waits for playlist.py).
 - Done when: a real playlist goes from the results page into Spotify through Soundiiz end to end.
 
 ### Phase 5 - Friends launch polish

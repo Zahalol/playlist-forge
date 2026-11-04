@@ -2,9 +2,11 @@
 
 One worker thread on the Reserved VM pulls tasks from a priority queue:
 - stage "quick": enrich the job's top QUICK_N artists, then mark the job "ready" (first results shown)
-- stage "full":  enrich the rest, then mark the job "done"
-Every queued quick stage runs before any full stage, so a new user is not stuck behind another user's
-long tail. The Last.fm client's global throttle keeps the whole process at 1 request per second.
+- stage "full":  enrich the rest (plus "borrow": neighbour tags for tagless artists); final profiles
+- stage "recs":  listener counts for the strongest recommendation candidates, then mark the job "done"
+Every queued quick stage runs before any full stage, and every full stage before any recs stage, so a new
+user is not stuck behind another user's long tail. The Last.fm client's global throttle keeps the whole
+process at 1 request per second.
 Job state lives in the database, so a restart resumes unfinished jobs (cached artists cost nothing).
 """
 from __future__ import annotations
@@ -19,14 +21,17 @@ from typing import Callable
 from app.db import ArtistCache, JobStore
 from app.pipeline.enrich import enrich_artists, neighbours_to_borrow_from, summarize
 from app.pipeline.profile import build_profiles
+from app.pipeline.recommend import candidates, listener_knee, listeners_from_lookup, lookup_targets, rank
 from app.pipeline.taxonomy import load as load_taxonomy
 from app.pipeline.text import artist_key
 
 log = logging.getLogger("playlist_forge.jobs")
 
 QUICK_N = 40
+REC_LOOKUP_BUDGET = 150        # artist.getInfo calls per job for candidates' listener counts
 PURGE_EVERY = 3600
-PRIORITY = {"quick": 0, "full": 1}
+PRIORITY = {"quick": 0, "full": 1, "recs": 2}
+REC_FIELDS = ("name", "score", "fit", "listeners", "links", "profile", "profile_share", "because")
 
 
 class JobRunner:
@@ -59,7 +64,11 @@ class JobRunner:
         for jid in self.store.unfinished():
             job = self.store.get(jid)
             if job:
-                self.submit(jid, "full" if job["status"] == "ready" else "quick")
+                if job["status"] != "ready":
+                    stage = "quick"
+                else:
+                    stage = "recs" if job["result"].get("stage_done") == "full" else "full"
+                self.submit(jid, stage)
                 n += 1
         return n
 
@@ -116,12 +125,66 @@ class JobRunner:
         sub_weights = {a: weights.get(a, 0.0) for a in entries}
         return build_profiles(snap, sub_weights, found, lookup)
 
+    # ------------------------------------------------------------ recommendations
+    def _recommend(self, jid: str, job: dict, progress) -> dict:
+        """Candidates from the cached similar lists, listener counts for the strongest ones, ranked lists."""
+        artists: list[str] = job["input"].get("artists", [])
+        weights: dict[str, float] = job["input"].get("weights", {})
+        profiles = job["result"].get("profiles") or []
+        cached = self.cache.get_many([artist_key(a) for a in artists])
+        entries = {a: cached[artist_key(a)] for a in artists if artist_key(a) in cached}
+        cands = candidates(weights, entries, profiles)
+        listeners = listeners_from_lookup(cands, self.cache.get_many([c["key"] for c in cands]))
+        todo = lookup_targets(cands, listeners, REC_LOOKUP_BUDGET)
+        self.store.update(jid, stage="recs", done=0, total=len(todo))
+        if todo:
+            got = enrich_artists(todo, self.cache, self._get_fetcher(), on_progress=progress, parts=("info",))
+            for name, e in got.items():
+                listeners[artist_key(name)] = e.get("listeners") if e.get("found") else None
+        res = rank(cands, listeners, profiles, knee=listener_knee(entries, weights))
+
+        def compact(x: dict) -> dict:
+            return {k: x.get(k) for k in REC_FIELDS}
+
+        return {"recommendations": [compact(x) for x in res["recommendations"]],
+                "by_profile": {pid: [compact(x) for x in lst] for pid, lst in res["by_profile"].items()},
+                "big_names": [compact(x) for x in res["big_names"]],
+                "knee": res["knee"], "household": res["household"], "n_candidates": len(cands)}
+
+    def _process_recs(self, jid: str, job: dict) -> None:
+        from app.clients.lastfm import LastFMKeyError
+
+        self.store.update(jid, status="running", stage="recs", done=0, total=0)
+        last_write = [0.0]
+
+        def progress(done: int, total: int, name: str, from_cache: bool) -> None:
+            if done == total or time.time() - last_write[0] > 0.5:
+                last_write[0] = time.time()
+                self.store.update(jid, done=done, total=total)
+
+        result = dict(job["result"])
+        try:
+            result.update(self._recommend(jid, job, progress))
+        except LastFMKeyError as e:
+            log.error("job %s stopped: %s", jid, e)
+            self.store.update(jid, status="failed", error="The music data service is not configured correctly. "
+                                                           "This is a problem on our side; please try again later.")
+            return
+        except Exception:                           # profiles are still worth showing; say the recs failed
+            log.exception("job %s recommendations failed", jid)
+            result["recs_error"] = True
+        result["stage_done"] = "recs"
+        self.store.update(jid, status="done", result=result)
+
     # ------------------------------------------------------------ one task
     def process(self, jid: str, stage: str) -> None:
         from app.clients.lastfm import LastFMKeyError
 
         job = self.store.get(jid)
         if not job or job["status"] in ("failed", "done"):
+            return
+        if stage == "recs":
+            self._process_recs(jid, job)
             return
         artists: list[str] = job["input"].get("artists", [])
         weights: dict[str, float] = job["input"].get("weights", {})
@@ -171,4 +234,6 @@ class JobRunner:
             self.store.update(jid, status="ready", result=result, done=len(names), total=len(names))
             self.submit(jid, "full")
         else:
-            self.store.update(jid, status="done", result=result, done=len(names), total=len(names))
+            result["stage_done"] = "full"           # profiles are final; recommendations come next
+            self.store.update(jid, status="ready", result=result, done=len(names), total=len(names))
+            self.submit(jid, "recs")

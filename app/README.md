@@ -12,7 +12,7 @@ app/
     enrich.py            cache-first Last.fm enrichment, neighbour borrowing, summary
     taxonomy.json/.py    tag families and tag matching
     profile.py           taste profiles: family mix, merge/split, names, descriptions
-    recommend.py         (Phase 4) candidate scoring, fit bar, balancing
+    recommend.py         artist recommendations: candidates from similar lists, dampener, quotas, fit bar
     playlist.py          (Phase 4) playlists + "Artist - Song" text
   clients/
     lastfm.py            Last.fm API client: 1 request/second global throttle, retries

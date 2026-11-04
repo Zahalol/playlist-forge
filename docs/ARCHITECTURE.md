@@ -76,17 +76,17 @@ Implemented in `app/pipeline/taxonomy.py` + `taxonomy.json` and `app/pipeline/pr
 
 ## Recommendation approach
 
-Planned for Phase 4 (not built yet). The proof of concept's scoring in `poc/scripts/build_profiles_recs.py` is the reference; its popularity numbers were Deezer fan counts and must be recalibrated on Last.fm listener counts.
+Built in `app/pipeline/recommend.py` (artists; songs and playlists follow in `playlist.py`). The proof of concept's scoring in `poc/scripts/build_profiles_recs.py` was the reference; its popularity numbers were Deezer fan counts and were recalibrated on Last.fm listener counts (D-32).
 
-- Taste weight: `weights.artist_weights` (already built).
-- Candidates: artists in the cached Last.fm similar lists of the user's artists (up to 50 each, already in the cache, no extra calls) that are not in any of the user's lists (with the name-containment check from the POC, using `artist_key`).
-- Score: sum of the 8 strongest (taste weight x Last.fm match) links, times a small breadth bonus, times a popularity dampener. Profile fit: the profile that contributes most of a candidate's score.
-- Popularity calibration (to decide in Phase 4): Last.fm listener counts run higher than Deezer fans (Coldplay 9.3M, Olivia Rodrigo 3.4M, Beach Bunny 1.7M, The Front Bottoms 971K, Tigers Jaw 528K, Free Throw 393K). Candidate listener counts need artist.getInfo calls, so only the top-scoring candidates are looked up (budget about 150 per job).
-- Household names above the calibrated threshold go to a "big names you skipped" list.
-- Display: a 1 to 5 fit bar from score quantiles, not a percentage (D-20).
-- Order: balanced across profiles; each profile gets a minimum number of slots.
-- Songs: artist.getTopTracks for recommended artists (max 2 per artist in the overall list), deep cuts from the user's lightly listened artists; track.getSimilar only as a bonus for older songs (empty for recent releases).
-- Calls: top tracks for about 40-60 recommended artists plus listener counts for about 150 candidates means a third job stage of roughly 3-4 minutes for a first-time user, shorter with a warm cache.
+- Taste weight: `weights.artist_weights`.
+- Candidates (`candidates()`): artists in the cached Last.fm similar lists of the user's artists (up to 50 each, already in the cache, no extra calls) that are not in any of the user's lists. Dropped: names that contain or are contained in a known artist's name ("Bob Seger & The Silver Bullet Band"), karaoke/tribute/cast/soundtrack entries, names with two or more commas, and the weaker of two near-duplicate names (Tom Petty vs Tom Petty and the Heartbreakers).
+- Raw score: sum of the 8 strongest (taste weight x Last.fm match) links, times a breadth bonus of 1 + 0.04 x min(links, 5). The same 8 links decide the profile: the profile whose artists gave most of the score; a candidate "belongs" to it for the per-profile lists when that is 40% or more.
+- Listener counts (job stage `recs`): artist.getInfo for candidates among the 200 strongest that have no cached count, at most 150 per job (about 2.5 minutes cold, seconds warm). Candidates without a count are treated as small.
+- Popularity dampener (`rank()`): 1.0 up to a knee, then 1 / (1 + 1.5 log10(listeners / knee)): 3.5x the knee gives 0.55, 10x gives 0.4. The knee is the median Last.fm listener count of the user's own artists, clamped to 500K-2.5M, so a mainstream listener is not punished for liking big names. Household names (at or above max(4M, 3 x knee)) leave the main list for "big names you skipped" (top 20 by raw score).
+- Calibration data: Last.fm counts saturate near 10M (Coldplay 9.3M, Kanye West 8.2M, Green Day 6.8M, Taylor Swift 6.2M, Ariana Grande 4.7M, Harry Styles 3.5M, Olivia Rodrigo 3.4M, Beach Bunny 1.7M, The Front Bottoms 971K, Tigers Jaw 528K). Fixture listeners' median artist: Mike 971K, country_classic 796K, narrow_electronic 691K, mainstream 2.0M, heavy 2.1M; the top-40 median was a poor anchor (Mike's is 1.7M because of Green Day and Taylor Swift), so the knee uses all of the user's artists.
+- Lists: 50 recommendations overall. Every profile gets at least 3 slots, or 0.7 x share x 50 if more, filled from its own list; the rest by dampened score. Order is balanced: score / sqrt(profile share), so the biggest profile does not fill the whole top. Per-profile lists hold up to 20 candidates ranked by that profile's own contribution. Display is a 1 to 5 fit bar from the position in the list (top 10% get 5, next 20% get 4, next 30% get 3, next 25% get 2), not a percentage (D-20). Each item carries "because you listen to": its three strongest seed artists.
+- Songs (next): artist.getTopTracks for recommended artists (max 2 per artist in the overall list), deep cuts from the user's lightly listened artists; track.getSimilar only as a bonus for older songs (empty for recent releases). Top tracks for about 40-60 recommended artists is another 1 minute cold.
+- Checking: `scripts/recs_report.py [--fetch N]` prints the lists for Mike and the four personas from the local cache; `--fetch` looks up listener counts through the real client (cached afterwards).
 
 ## Playlist text and the Spotify hand-off
 
@@ -97,10 +97,11 @@ Planned for Phase 4 (not built yet). The proof of concept's scoring in `poc/scri
 ## Jobs and state
 
 `jobs(id, created_at, expires_at, status, stage, done, total, input_json, result_json, error)` in `app/db.py`.
-- Statuses: `review` (uploaded, periods being checked), `queued`, `running`, `ready` (quick stage done, preliminary profiles shown), `done`, `failed`. Expired jobs are invisible and purged hourly.
-- Stages: `quick` (top 40 artists), `full` (the rest, up to 150), `borrow` (neighbour tags for tagless artists, inside the full stage). Phase 4 adds a recommendation stage.
-- Input JSON: files, overrides, artists (ordered), weights, listening (`profile.snapshot`). Result JSON: summary, artists, profiles, unresolved, preliminary, stage_done.
-- The job id is in the URL only (cookie link-back is a TODO). On restart, unfinished jobs are re-queued and resume cheaply from the cache.
+- Statuses: `review` (uploaded, periods being checked), `queued`, `running`, `ready` (profiles shown, more to come), `done`, `failed`. Expired jobs are invisible and purged hourly.
+- Stages: `quick` (top 40 artists), `full` (the rest, up to 150), `borrow` (neighbour tags for tagless artists, inside the full stage), `recs` (listener counts for up to 150 recommendation candidates). Queue priority is quick, then full, then recs, so every user's first result comes before anyone's long tail.
+- Input JSON: files, overrides, artists (ordered), weights, listening (`profile.snapshot`). Result JSON: summary, artists, profiles, unresolved, preliminary, stage_done (`quick`, `full`, `recs`), recommendations, by_profile, big_names, knee, household, n_candidates, recs_error.
+- The job id is in the URL only (cookie link-back is a TODO). On restart, unfinished jobs are re-queued at the stage after `stage_done` and resume cheaply from the cache.
+- A failure inside the recs stage keeps the profiles and marks the job done with `recs_error`; only an invalid Last.fm key fails the job.
 
 ## Privacy
 

@@ -67,20 +67,38 @@ def test_build_runs_quick_then_full(unlabeled_files):
     page = c.get(f"/jobs/{jid}/status").text
     assert "Filling in the rest" not in page                                 # ready, full not started yet
     assert "Your taste profiles" in page and "first look" in page
-    # full stage
-    runner.run_pending()
+    # full stage: final profiles, then the recommendation stage is queued
+    _, _, j, stage = runner.q.get()
+    assert stage == "full"
+    runner.process(j, stage)
     job = store.get(jid)
-    assert job["status"] == "done"
+    assert job["status"] == "ready" and job["result"]["stage_done"] == "full"
     n = len(job["input"]["artists"])
     assert len(job["result"]["artists"]) == n and n > 50
     # the 10 quick artists were cached, so each artist was fetched exactly once
     assert len([x for x in fake.calls if x[0] == "info"]) == n
     page = c.get(f"/jobs/{jid}/status").text
-    assert "(complete)" in page and "every 2s" not in page               # polling stops when done
+    assert "Finding artists you might like" in page and "every 2s" in page
     assert not job["result"]["preliminary"]
     # FakeLastFM tags every artist "rock, indie", so everything lands in one Indie & Alternative profile
     assert [p["name"] for p in job["result"]["profiles"]] == ["Indie & Alternative"]
     assert "Indie &amp; Alternative" in page and "of your listening" in page
+    # recommendation stage: listener counts for the strongest candidates, then done
+    _, _, j, stage = runner.q.get()
+    assert stage == "recs"
+    runner.process(j, stage)
+    job = store.get(jid)
+    assert job["status"] == "done" and job["result"]["stage_done"] == "recs"
+    recs = job["result"]["recommendations"]
+    assert recs and all(r["name"].endswith(tuple(f"friend {i}" for i in range(6))) for r in recs)
+    assert all(1 <= r["fit"] <= 5 and r["because"] and r["profile"] == "p1" for r in recs)
+    assert set(job["result"]["by_profile"]) == {"p1"}
+    extra = len([x for x in fake.calls if x[0] == "info"]) - n
+    assert 0 < extra <= 150 and all(r["listeners"] for r in recs)        # candidates were looked up (info only)
+    assert not [x for x in fake.calls if x[0] in ("tags", "similar") and "friend" in x[1]]
+    page = c.get(f"/jobs/{jid}/status").text
+    assert "(complete)" in page and "every 2s" not in page               # polling stops when done
+    assert "Artists you might like" in page and "Explore:" in page and 'class="fit"' in page
 
 
 def test_top_artists_go_first(unlabeled_files):
@@ -123,6 +141,34 @@ def test_restart_resumes_unfinished(unlabeled_files):
     assert runner.resume_unfinished() == 1
     runner.run_pending()
     assert app.state.store.get(jid)["status"] == "done"
+
+
+def test_restart_after_profiles_resumes_at_recommendations(unlabeled_files):
+    app, c, _ = make(quick_n=10)
+    jid = upload(c, unlabeled_files)
+    c.post(f"/review/{jid}/build")
+    runner, store = app.state.runner, app.state.store
+    for _ in range(2):                                         # quick, then full
+        _, _, j, stage = runner.q.get()
+        runner.process(j, stage)
+    assert store.get(jid)["result"]["stage_done"] == "full"
+    runner.q.queue.clear()                                     # crash before the recs stage ran
+    assert runner.resume_unfinished() == 1
+    assert runner.q.queue[0][3] == "recs"
+    runner.run_pending()
+    assert store.get(jid)["status"] == "done" and store.get(jid)["result"]["recommendations"]
+
+
+def test_recommendation_failure_keeps_profiles(unlabeled_files, monkeypatch):
+    app, c, _ = make(quick_n=10)
+    jid = upload(c, unlabeled_files)
+    c.post(f"/review/{jid}/build")
+    runner, store = app.state.runner, app.state.store
+    monkeypatch.setattr(runner, "_recommend", lambda *a: 1 / 0)
+    runner.run_pending()
+    job = store.get(jid)
+    assert job["status"] == "done" and job["result"]["profiles"] and job["result"].get("recs_error")
+    assert "could not build recommendations" in c.get(f"/jobs/{jid}/status").text
 
 
 def test_missing_job():

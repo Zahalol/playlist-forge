@@ -32,3 +32,7 @@ class FakeLastFM:
     def artist_similar(self, name):
         self._check("similar", name)
         return [[f"{name} friend {i}", round(1 - i / 10, 2)] for i in range(6)]
+
+    def artist_top_tracks(self, name, limit=10):
+        self._check("top_tracks", name)
+        return [[f"{name} song {i}", 5000 - 500 * i] for i in range(min(limit, 5))]
