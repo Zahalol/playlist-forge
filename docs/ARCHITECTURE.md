@@ -48,8 +48,8 @@ Every module is a pure function over plain dicts or dataclasses so tests run wit
 | Source | Used for | Auth | Pace | Notes |
 |---|---|---|---|---|
 | Skiley genre files | the user's own genre shares per period | none (uploaded) | instant | Spotify's own genre view. Strong prior for profile families and names. |
-| Last.fm | artist top tags, track top tags, artist.getSimilar, track.getSimilar | free API key | about 1 request/second, cache everything | Non-commercial terms. "Powered by Last.fm" attribution. Not yet tested by us: Phase 0 smoke test. |
-| Deezer | fan counts (popularity), related artists, top tracks, explicit flag | none | 0.2 s between calls | Optional. Search with limit 15 and pick the exact-name match with the most fans. Any 403 or outage degrades gracefully. |
+| Last.fm (primary, D-27) | artist.getTopTags, artist.getSimilar, artist.getInfo (listener counts for popularity), artist.getTopTracks; track.getSimilar as a bonus for older songs | free API key | 1 request/second (D-28), cache everything | Tested 2026-11-04 (docs/LASTFM_SMOKE_RESULTS.md): 95-100% artist tag coverage, 100% similar artists; song similarity empty for recent releases. Non-commercial terms. "Powered by Last.fm" attribution. |
+| Deezer (fallback) | fans, related artists, top tracks, explicit flag | none | 0.2 s between calls | Only when Last.fm has no data for an artist. Search with limit 15 and pick the exact-name match with the most fans. Any 403 or outage degrades gracefully. |
 
 Planned for v0.2 as a slow background enricher: MusicBrainz (MBIDs, tags, country, start year; 1 request/second with a descriptive User-Agent) and ListenBrainz Labs similar artists (undocumented, experimental).
 

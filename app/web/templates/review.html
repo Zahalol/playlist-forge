@@ -61,8 +61,11 @@
   </article>
 </div>
 
-<p>
+<form method="post" action="/review/{{ token }}/build" style="display:inline">
   <a href="/review/{{ token }}/listening.csv" role="button" class="outline">Download as CSV</a>
-  <button disabled title="Coming in the next build phase">Build my profiles (coming soon)</button>
-</p>
+  {% if can_build %}
+  <button type="submit">{% if needs_review %}Labels look right, build my profiles{% else %}Build my profiles{% endif %}</button>
+  {% endif %}
+</form>
+<p><small>Building looks up your artists' genres and similar artists on Last.fm. Your first results appear in about a minute; the rest fill in while you read.</small></p>
 {% endblock %}

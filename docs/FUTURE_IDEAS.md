@@ -33,6 +33,10 @@ Not for the MVP. Rough priority order within each group. Move an item into PLAN.
 18. Song-level moods for mood playlists.
 19. Obscurity score and "big names you skipped" as a shareable card.
 20. Concert suggestions from profiles (Bandsintown or Songkick).
+20a. ListenBrainz second opinion (D-29): similar artists and official genres; agreement between sources as a confidence boost. Needs a free ListenBrainz user token.
+20b. ListenBrainz LB Radio: prompt-based playlists ("artist:(X)", "tag:(Y)"), a possible engine for event and mood playlists. Needs the token.
+20c. Discogs styles from the CC0 monthly dump as an offline artist-to-style table for finer genres.
+20d. ListenBrainz Labs "spotify-id-from-metadata": attach Spotify links to recommended songs (no Spotify API needed).
 
 ## Delivery
 

@@ -1,0 +1,52 @@
+{% if not job %}
+<article style="border-left: 4px solid #c62828">This result has expired or does not exist. <a href="/upload">Upload your files again</a>.</article>
+{% else %}
+{% set live = job.status in ("queued", "running", "ready") %}
+{% set summary = job.result.get("summary") %}
+
+{% if job.status == "failed" %}
+<article style="border-left: 4px solid #c62828">
+  <strong>Sorry, this didn't finish.</strong> {{ job.error }}
+  <p><a href="/upload" role="button" class="secondary">Start again</a></p>
+</article>
+{% elif job.status == "queued" %}
+<article aria-busy="true">Waiting to start{% if position %} ({{ position }} ahead of you){% endif %}...</article>
+{% elif live %}
+<article>
+  <strong>{% if job.stage == "quick" %}Looking up your top artists{% else %}Filling in the rest of your artists{% endif %}</strong>
+  <progress value="{{ job.done }}" max="{{ job.total or 1 }}"></progress>
+  <small>{{ job.done }} of {{ job.total }} artists{% if job.stage == "quick" %}. First results appear when this bar is full.{% else %}. Results below update as this finishes.{% endif %}</small>
+</article>
+{% endif %}
+
+{% if summary %}
+<article>
+  <header><strong>What Last.fm knows about your artists</strong>{% if job.status == "done" %} <small>(complete)</small>{% endif %}</header>
+  <p>{{ summary.found }} of {{ summary.artists }} artists found, {{ summary.tagged }} with genre tags, {{ summary.with_similar }} with similar artists.
+  {% if summary.errors %}{{ summary.errors }} could not be looked up right now and will be retried next time.{% endif %}</p>
+  <p><strong>Your strongest genre tags:</strong> {{ summary.top_tags | join(", ") }}</p>
+  <details>
+    <summary>Artist details</summary>
+    <figure><table>
+      <thead><tr><th>Artist</th><th>Listeners</th><th>Top tags</th><th>Similar</th></tr></thead>
+      <tbody>
+      {% for a in job.result.artists %}
+        <tr>
+          <td>{{ a.name }}{% if a.lastfm_name and a.lastfm_name != a.name %} <small>({{ a.lastfm_name }})</small>{% endif %}</td>
+          <td>{% if a.found %}{{ "{:,}".format(a.listeners) }}{% else %}<small>not found</small>{% endif %}</td>
+          <td>{{ a.tags | join(", ") }}</td>
+          <td>{{ a.n_similar }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></figure>
+  </details>
+  <p><small>Taste profiles, recommendations and playlists are the next build step. Music data powered by <a href="https://www.last.fm" target="_blank" rel="noopener">Last.fm</a>.</small></p>
+</article>
+{% endif %}
+
+{% if live %}
+{# keep polling every 2 seconds while the job is running #}
+<div hx-get="/jobs/{{ job.id }}/status" hx-trigger="every 2s" hx-target="#job-status" hx-swap="innerHTML"></div>
+{% endif %}
+{% endif %}

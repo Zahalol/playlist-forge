@@ -3,23 +3,24 @@
 Phases and milestones live in docs/PLAN.md. Last updated 2026-11-04.
 
 ## Mike
-- [x] Create the GitHub repo: https://github.com/Zahalol/playlist-forge (public, pushed).
-- [ ] Get a free Last.fm API key at https://www.last.fm/api/account/create. Put it in `C:\dev\playlist-forge\.env` as `LASTFM_API_KEY=...` and later in Replit Secrets.
-- [x] Import the GitHub repo into Replit and configure the development run workflow.
-- [ ] Publish a Reserved VM deployment when ready.
-- [ ] Replace the Last.fm credential previously stored in plain-text Replit configuration and save the replacement in Secrets before Last.fm integration.
-- [ ] Test Soundiiz text import (and TuneMyMusic) with a 10-line paste in both "Artist - Song" and "Song - Artist" order. Note which works (DECISIONS D-24).
-- [ ] Ask 2 or 3 friends for their 9 Skiley files, and whether they are OK with them being public test data (D-26).
-- [ ] Close Excel and delete `Spotify_Top_Stats_Consolidated.xlsx` from the OneDrive folder root (the real copy is in poc/output).
+- [ ] In Replit: open the Database tool and add a PostgreSQL database (this sets `DATABASE_URL` automatically).
+- [ ] In Replit Secrets: confirm `LASTFM_API_KEY` matches the corrected key in `.env`.
+- [ ] In Replit: pull the latest code from GitHub (Git pane), press Run, open `/health` in the webview. It should say `ok`. Report any error text.
+- [ ] Deployment (Reserved VM) can wait until profiles work, so credits are not spent on an incomplete site.
 
 ## Claude (next sessions)
-- [ ] Phase 0: Last.fm smoke script (`scripts/lastfm_smoke.py`) once the key exists.
-- [x] Phase 0: Replit development config (Python 3.12, port 5000 workflow, existing VM target preserved; publishing not verified).
-- [ ] Phase 1: upload page, classification review with override dropdowns, table view, CSV download.
-- [ ] Phase 2: enrichment clients, cache tables, pre-warm script, job runner.
-- [ ] Draft `app/pipeline/taxonomy.json` (about 15 tag families).
+- [ ] Phase 3: `app/pipeline/taxonomy.json` (about 15 tag families) and `profile.py`: family vectors from Last.fm tags, Skiley genre shares as prior, thin-tag borrowing (tags shared by 3+ similar artists), split families over 40%, merge under 3%, 1-8 profiles, unresolved bucket, template names and descriptions. Test on Mike and the four personas.
+- [ ] Phase 4 prep: recalibrate the popularity dampener on Last.fm listener counts; add artist.getTopTracks to the enrichment of recommended artists.
+- [ ] Replit config check if Run fails (run command, Python version, Postgres connection).
+- [ ] Remember the last job in a cookie so the landing page can link back to it.
 
-## Done this session
-- [x] Plan reviewed, fact-checked and revised; decisions D-01 to D-23 recorded.
-- [x] Classifier spec and reference script folded in (docs/SKILEY_PERIOD_CLASSIFIER.md, poc/scripts/classify_spotify_lists.py).
-- [x] Repo created at `C:\dev\playlist-forge` with the FastAPI scaffold, classifier and parser ported, tests passing.
+## Done
+- [x] Phase 2: Last.fm client with 1/s throttle and retries, shared cache (Postgres/SQLite), two-stage background jobs (quick top 40, then full), progress page, cache pre-warm script, 44 tests; live run on Mike's export: first results in about 65 seconds (D-28 decided).
+- [x] MusicBrainz, ListenBrainz and ten other APIs evaluated (docs/API_EVALUATION.md); Last.fm stays primary (D-27), ListenBrainz is the v0.2 second opinion (D-29).
+- [x] Last.fm smoke test (docs/LASTFM_SMOKE_RESULTS.md).
+- [x] Plan reviewed, fact-checked and revised; decisions recorded in docs/DECISIONS.md.
+- [x] Repo at `C:\dev\playlist-forge`, pushed to https://github.com/Zahalol/playlist-forge; imported into Replit.
+- [x] Phase 0/1: FastAPI scaffold, upload, period review with overrides, CSV download.
+- [x] Soundiiz test: both line orders import to Spotify (D-24: "Artist - Song").
+- [x] Four synthetic listener personas replace friends' exports (D-26).
+- [x] Leftover workbook moved into poc/output (Mike's 21-tab version), older copy kept as `_old`.

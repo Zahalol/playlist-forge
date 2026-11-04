@@ -16,3 +16,6 @@ poc/output/music_cache.json.tmp
 poc/exports/
 poc/output/*.xlsx
 poc/output/music_cache.json
+
+# Local API data (smoke tests, cache pre-warm); never committed
+data/
