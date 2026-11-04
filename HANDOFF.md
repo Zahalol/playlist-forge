@@ -2,7 +2,7 @@
 
 ## Current state (2026-11-04)
 
-**Repo**: `C:\dev\playlist-forge` (outside OneDrive). Git initialised with one commit. Not yet on GitHub or Replit.
+**Repo**: `C:\dev\playlist-forge` (outside OneDrive), pushed to https://github.com/Zahalol/playlist-forge (public, MIT, branch `main`). Not yet on Replit.
 
 **Working today (Phase 0 scaffold + Phase 1 core)**
 - FastAPI app with landing page, `/health`, upload (files or paste), period review with override dropdowns, listening summary, CSV download.
@@ -24,7 +24,7 @@
 - Open decisions: D-24 import line order, D-25 profile count for small libraries, D-26 friends' exports.
 
 ## Next steps
-1. Mike: create GitHub repo `playlist-forge`, push, import into Replit, Reserved VM deploy, Last.fm key, Soundiiz paste test, friends' exports (see TODO.md).
+1. Mike: import into Replit, Reserved VM deploy, Last.fm key, Soundiiz paste test, friends' exports (see TODO.md).
 2. Claude: Last.fm smoke test, then Phase 2 (enrichment clients, Postgres cache, job runner), then Phase 3 taxonomy and profiling.
 
 ## Run

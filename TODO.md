@@ -3,9 +3,9 @@
 Phases and milestones live in docs/PLAN.md. Last updated 2026-11-04.
 
 ## Mike
-- [ ] Create the GitHub repo `playlist-forge` (public, MIT, empty, no README) and send the URL, or push `C:\dev\playlist-forge` yourself.
+- [x] Create the GitHub repo: https://github.com/Zahalol/playlist-forge (public, pushed).
 - [ ] Get a free Last.fm API key at https://www.last.fm/api/account/create. Put it in `C:\dev\playlist-forge\.env` as `LASTFM_API_KEY=...` and later in Replit Secrets.
-- [ ] Import the GitHub repo into Replit and set up a Reserved VM deployment (smallest size).
+- [ ] Import the GitHub repo into Replit (replit.com/import, or replit.com/github.com/Zahalol/playlist-forge) and set up a Reserved VM deployment (smallest size).
 - [ ] Test Soundiiz text import (and TuneMyMusic) with a 10-line paste in both "Artist - Song" and "Song - Artist" order. Note which works (DECISIONS D-24).
 - [ ] Ask 2 or 3 friends for their 9 Skiley files, and whether they are OK with them being public test data (D-26).
 - [ ] Close Excel and delete `Spotify_Top_Stats_Consolidated.xlsx` from the OneDrive folder root (the real copy is in poc/output).
