@@ -22,7 +22,7 @@ Landing -> Demo results (optional) -> Export guide -> Upload -> Check periods ->
 ## Stack
 
 - **Backend**: Python 3.12, FastAPI, Jinja2, HTMX. No frontend build step. Pico CSS from a CDN.
-- **Database**: Replit PostgreSQL (`DATABASE_URL`) on Replit; local SQLite file `data/playlist_forge.sqlite` when `DATABASE_URL` is unset; in-memory SQLite in tests. Plain SQLAlchemy Core, synchronous. Tables today: `jobs`, `artist_cache`. A `feedback` table comes with thumbs up/down (D-13).
+- **Database**: Replit PostgreSQL (`DATABASE_URL`) on Replit; local SQLite file `data/playlist_forge.sqlite` when `DATABASE_URL` is unset; in-memory SQLite in tests. Plain SQLAlchemy Core, synchronous. Tables: `jobs`, `artist_cache`, `feedback` (anonymous thumbs up/down per recommended artist, D-13: job id, artist, profile family, vote; a repeat vote from the same job replaces the earlier one; `FeedbackStore.summary()` aggregates).
 - **Background work**: one worker thread (`app/jobs.py`) started in the FastAPI lifespan, pulling (priority, job, stage) tasks from a priority queue. Job state and progress live in the database so a restart resumes unfinished jobs.
 - **Hosting**: Replit Reserved VM (smallest, about $15/month from Core credits). Always on; no request timeout on background work. Autoscale is not used because it has no persistent disk, times out long requests, and can stop instances that are running background work.
 - **Repo**: GitHub `playlist-forge`, imported into Replit. Pull before editing on Replit.
@@ -95,7 +95,7 @@ Built in `app/pipeline/playlist.py`; ported from the proof of concept's "Recomme
 - One playlist per profile, 20 songs by default (5 to 50): 3 anchors (the user's own top songs by the profile's artists, one per artist), then new picks (the top Last.fm track of each recommended artist in the profile's own list, one song per artist; a second song only when the list runs short), then up to 4 deep cuts (top tracks the user has not surfaced, from the profile's lightest-listened artists, taste weight under 0.4). Short lists are filled with more of the user's own songs and flagged `short`.
 - Top tracks come from the `songs` job stage: `artist_top_tracks` for the first 14 recommended artists of each profile plus up to 20 lightly listened artists, 120 calls at most per job (about 2 minutes cold). The cache part `top_tracks` expires like listener counts.
 - Line format "Artist - Song" (D-24). `clean_title` strips version suffixes (" - Live ...", " - 2014 Remaster", " - Radio Edit", "(Remastered Version)") and featured artists ("(feat. ...)", "[feat. ...]"); originals are kept in the item data. Each item carries a role (anchor, new, deep_cut) and a one-line reason.
-- Results page: a card per playlist with the text in a read-only box, Copy (clipboard API) and Download .txt (`/jobs/{id}/playlists/{pid}.txt`), "Why these songs", and the import steps.
+- Results page: a songs-per-playlist control (5-50; `POST /jobs/{id}/playlists` rebuilds from cached top tracks with no Last.fm calls and stores `playlist_size`), a card per playlist with the text in a read-only box, Copy (clipboard API) and Download .txt (`/jobs/{id}/playlists/{pid}.txt`), "Why these songs", and the import steps.
 - Soundiiz (primary): free plan allows 200 tracks per playlist with unlimited playlists and text import. The page walks through paste, choose Spotify, sign in, confirm.
 - TuneMyMusic (alternative): free plan allows 500 tracks per account in total; "Upload file" with the .txt.
 
@@ -110,7 +110,7 @@ Built in `app/pipeline/playlist.py`; ported from the proof of concept's "Recomme
 
 ## Privacy
 
-Uploads and results belong to the session and are deleted after 24 hours. Nothing a user uploads goes into the repo, logs (beyond counts), or the shared cache. Feedback is anonymous.
+Uploads and results belong to the session and are deleted after 24 hours. Nothing a user uploads goes into the repo, logs (beyond counts), or the shared cache. Feedback is anonymous: the `feedback` table keeps only the artist name, the profile family, the vote and the job id (which expires with the job).
 
 ## Local development
 

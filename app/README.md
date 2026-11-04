@@ -16,7 +16,7 @@ app/
     playlist.py          one playlist per profile (anchors, new picks, deep cuts), title cleaning, "Artist - Song" text
   clients/
     lastfm.py            Last.fm API client: 1 request/second global throttle, retries
-  db.py                  SQLAlchemy Core: artist_cache, jobs (Postgres or SQLite)
+  db.py                  SQLAlchemy Core: artist_cache, jobs, feedback (Postgres or SQLite)
   jobs.py                worker thread, priority queue, quick/full/borrow stages, profiles
   web/
     main.py              FastAPI routes; create_app() factory (tests inject a fake fetcher)

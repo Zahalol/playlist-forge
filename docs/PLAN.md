@@ -84,9 +84,9 @@ See ARCHITECTURE.md "Recommendation approach" for the design and the Last.fm cal
 - [x] Top tracks: `top_tracks` cache part, fetched in the `songs` stage for up to 120 recommended and lightly listened artists per job; `artist_top_tracks` verified live. (2026-11-04)
 - [x] `app/pipeline/playlist.py` (pure): one playlist per profile (default 20, max 50): 3 anchors, new picks (one song per artist, a second only when short), up to 4 deep cuts; "Artist - Song" text (D-24) with " - Live", " - 2019 Remix", "(feat. ...)" stripped. (2026-11-04)
 - [x] Results page: playlist cards with Copy and Download .txt, Soundiiz walkthrough (D-19), TuneMyMusic as the alternative. (2026-11-04)
-- [ ] Anonymous thumbs up/down (D-13) if time allows.
+- [x] Anonymous thumbs up/down (D-13): `feedback` table, vote buttons on each recommendation. (2026-11-04)
 - [x] Tests: pure-function tests with made-up data and a web-flow test through recommendations and playlists (83 tests). (2026-11-04)
-- [ ] Playlist size control on the results page (20 default; the builder accepts 5-50 but the page has no control yet).
+- [x] Playlist size control on the results page (5-50; rebuilds from cached top tracks, no new calls). (2026-11-04)
 - Done: Mike imported a generated playlist into Spotify through Soundiiz on 2026-11-04 and every song matched.
 
 ### Phase 5 - Friends launch polish

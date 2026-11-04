@@ -1,0 +1,6 @@
+<span class="vote" hx-target="this" hx-swap="outerHTML">
+  <button type="button" class="outline secondary{% if vote == 1 %} on{% endif %}" title="Good pick"
+          hx-post="/jobs/{{ job.id }}/feedback" hx-vals='{"artist": {{ artist | tojson }}, "vote": 1}'>+</button>
+  <button type="button" class="outline secondary{% if vote == -1 %} on{% endif %}" title="Not for me"
+          hx-post="/jobs/{{ job.id }}/feedback" hx-vals='{"artist": {{ artist | tojson }}, "vote": -1}'>-</button>
+</span>

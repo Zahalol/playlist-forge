@@ -155,6 +155,40 @@ def test_restart_resumes_unfinished(unlabeled_files):
     assert app.state.store.get(jid)["status"] == "done"
 
 
+def finished_job(unlabeled_files, quick_n=10):
+    app, c, fake = make(quick_n=quick_n)
+    jid = upload(c, unlabeled_files)
+    c.post(f"/review/{jid}/build")
+    app.state.runner.run_pending()
+    return app, c, fake, jid
+
+
+def test_playlist_size_rebuild_uses_cache_only(unlabeled_files):
+    app, c, fake, jid = finished_job(unlabeled_files)
+    calls = len(fake.calls)
+    page = c.post(f"/jobs/{jid}/playlists", data={"size": 35}).text
+    job = app.state.store.get(jid)
+    assert job["result"]["playlist_size"] == 35 and job["result"]["playlists"][0]["size"] == 35
+    assert len(fake.calls) == calls                                      # no Last.fm calls
+    assert 'value="35"' in page and c.get(f"/jobs/{jid}/playlists/p1.txt").text.count("\n") == 35
+    c.post(f"/jobs/{jid}/playlists", data={"size": 999})
+    assert app.state.store.get(jid)["result"]["playlist_size"] == 50
+
+
+def test_thumbs_feedback_is_recorded_and_replaced(unlabeled_files):
+    app, c, _, jid = finished_job(unlabeled_files)
+    name = app.state.store.get(jid)["result"]["recommendations"][0]["name"]
+    page = c.get(f"/jobs/{jid}/status").text
+    assert 'class="vote"' in page and "Your take" in page
+    r = c.post(f"/jobs/{jid}/feedback", data={"artist": name, "vote": 1})
+    assert r.status_code == 200 and 'secondary on" title="Good pick"' in r.text
+    c.post(f"/jobs/{jid}/feedback", data={"artist": name, "vote": -1})
+    assert app.state.votes.summary() == [{"artist": name, "up": 0, "down": 1}]
+    assert app.state.store.get(jid)["result"]["votes"] == {name: -1}
+    assert 'secondary on" title="Not for me"' in c.get(f"/jobs/{jid}/status").text
+    assert c.post(f"/jobs/{jid}/feedback", data={"artist": "Nobody", "vote": 1}).status_code == 404
+
+
 def test_restart_after_profiles_resumes_at_recommendations(unlabeled_files):
     app, c, _ = make(quick_n=10)
     jid = upload(c, unlabeled_files)

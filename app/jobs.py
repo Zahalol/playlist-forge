@@ -20,7 +20,7 @@ from typing import Callable
 
 from app.db import ArtistCache, JobStore
 from app.pipeline.enrich import enrich_artists, neighbours_to_borrow_from, summarize
-from app.pipeline.playlist import artists_needing_top_tracks, build_playlists
+from app.pipeline.playlist import DEFAULT_SIZE, MAX_SIZE, MIN_SIZE, artists_needing_top_tracks, build_playlists
 from app.pipeline.profile import build_profiles
 from app.pipeline.recommend import candidates, listener_knee, listeners_from_lookup, lookup_targets, rank
 from app.pipeline.taxonomy import load as load_taxonomy
@@ -34,6 +34,15 @@ TOP_TRACKS_BUDGET = 120        # artist.getTopTracks calls per job (recommended 
 PURGE_EVERY = 3600
 PRIORITY = {"quick": 0, "full": 1, "recs": 2}
 REC_FIELDS = ("name", "score", "fit", "listeners", "links", "profile", "profile_share", "because")
+
+
+def playlists_from_cache(snap: dict, weights: dict[str, float], profiles: list[dict], by_profile: dict[str, list[dict]],
+                         cache: ArtistCache, size: int) -> list[dict]:
+    """Playlists from whatever top tracks the cache holds for the playlist artists (pure apart from the cache read)."""
+    names = artists_needing_top_tracks(profiles, by_profile, weights)
+    cached = cache.get_many([artist_key(n) for n in names])
+    top_tracks = {k: e.get("top_tracks") or [] for k, e in cached.items() if e.get("found", True)}
+    return build_playlists(snap, weights, profiles, by_profile, top_tracks, size=size)
 
 
 class JobRunner:
@@ -157,10 +166,26 @@ class JobRunner:
         snap = job["input"].get("listening") or {}
         names = artists_needing_top_tracks(profiles, by_profile, weights)[:TOP_TRACKS_BUDGET]
         self.store.update(jid, stage="songs", done=0, total=len(names))
-        got = enrich_artists(names, self.cache, self._get_fetcher(), on_progress=progress, parts=("top_tracks",)) if names else {}
-        top_tracks = {artist_key(n): e.get("top_tracks") or [] for n, e in got.items() if e.get("found", True)}
-        out["playlists"] = build_playlists(snap, weights, profiles, by_profile, top_tracks)
+        if names:
+            enrich_artists(names, self.cache, self._get_fetcher(), on_progress=progress, parts=("top_tracks",))
+        size = int(job["result"].get("playlist_size") or DEFAULT_SIZE)
+        out["playlists"] = playlists_from_cache(snap, weights, profiles, by_profile, self.cache, size)
+        out["playlist_size"] = size
         return out
+
+    def rebuild_playlists(self, jid: str, size: int) -> dict | None:
+        """Rebuild a finished job's playlists at another size from cached top tracks (no Last.fm calls)."""
+        job = self.store.get(jid)
+        if not job or not job["result"].get("playlists"):
+            return job
+        result = dict(job["result"])
+        result["playlists"] = playlists_from_cache(job["input"].get("listening") or {}, job["input"].get("weights", {}),
+                                                   result.get("profiles") or [], result.get("by_profile") or {},
+                                                   self.cache, size)
+        result["playlist_size"] = max(MIN_SIZE, min(MAX_SIZE, int(size)))
+        self.store.update(jid, result=result)
+        job["result"] = result
+        return job
 
     def _process_recs(self, jid: str, job: dict) -> None:
         from app.clients.lastfm import LastFMKeyError

@@ -41,6 +41,16 @@ jobs = Table(
     Column("error", Text, nullable=False, default=""),
 )
 
+feedback = Table(
+    "feedback", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("created_at", Float, nullable=False),
+    Column("job_id", String(40), nullable=False),      # only to let a user change their vote; jobs expire anyway
+    Column("artist", String(300), nullable=False),
+    Column("profile", String(80), nullable=False, default=""),   # family id of the profile the rec was shown under
+    Column("vote", Integer, nullable=False),            # +1 or -1
+)
+
 JOB_TTL = 24 * 3600
 
 
@@ -151,3 +161,26 @@ class JobStore:
         """Delete expired jobs, including their uploaded lists and results (privacy rule: 24 hours)."""
         with self.engine.begin() as c:
             return c.execute(delete(jobs).where(jobs.c.expires_at < time.time())).rowcount or 0
+
+
+# ------------------------------------------------------------------ feedback (D-13)
+class FeedbackStore:
+    """Anonymous thumbs up/down per recommended artist. Holds no user data beyond the vote itself."""
+
+    def __init__(self, engine: Engine):
+        self.engine = engine
+
+    def vote(self, job_id: str, artist: str, vote: int, profile: str = "") -> None:
+        """Record a vote (+1 / -1); a repeat vote from the same job replaces the earlier one."""
+        with self.engine.begin() as c:
+            c.execute(delete(feedback).where(feedback.c.job_id == job_id, feedback.c.artist == artist))
+            c.execute(insert(feedback).values(created_at=time.time(), job_id=job_id, artist=artist, profile=profile, vote=int(vote)))
+
+    def summary(self, limit: int = 50) -> list[dict]:
+        """Artists with their up and down counts, most voted first."""
+        counts: dict[str, dict] = {}
+        with self.engine.connect() as c:
+            for r in c.execute(select(feedback.c.artist, feedback.c.vote)):
+                d = counts.setdefault(r.artist, {"artist": r.artist, "up": 0, "down": 0})
+                d["up" if r.vote > 0 else "down"] += 1
+        return sorted(counts.values(), key=lambda d: -(d["up"] + d["down"]))[:limit]

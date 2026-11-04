@@ -11,7 +11,7 @@ Short backlog. Current state, open items and next steps live in HANDOFF.md; phas
 - [x] Imported a generated playlist into Spotify through Soundiiz; all songs matched (2026-11-04).
 
 ## Claude (Phase 4 follow-ups)
-- [ ] Playlist size control (20 default, up to 50) on the results page; thumbs up/down (D-13).
+- [x] Playlist size control (5-50, rebuilt from cached top tracks) and thumbs up/down (D-13, `feedback` table) on the results page (2026-11-04).
 - [ ] Recommendation tuning with real playlists in hand: "member of" duplicates (Jerry Garcia for Grateful Dead), mashup names ("Bob Dylan and The Band"), one-seed musicals picks with tiny listener counts, and whether 50 overall recommendations is the right length.
 - [ ] Deployment to the Reserved VM (the Soundiiz import works, so nothing blocks it).
 

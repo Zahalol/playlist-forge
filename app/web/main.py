@@ -19,7 +19,7 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 
-from app.db import ArtistCache, JobStore, make_engine
+from app.db import ArtistCache, FeedbackStore, JobStore, make_engine
 from app.jobs import JobRunner
 from app.pipeline.classify import CATEGORIES, PERIODS, ClassifyResult, apply_overrides, classify
 from app.pipeline.parse import parse, records_csv
@@ -48,6 +48,7 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
     engine = make_engine(db_url)
     store = JobStore(engine)
     cache = ArtistCache(engine)
+    votes = FeedbackStore(engine)
     runner = JobRunner(store, cache, fetcher_factory or default_fetcher_factory)
 
     @asynccontextmanager
@@ -61,7 +62,7 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
         runner.stop()
 
     app = FastAPI(title="Playlist Forge", lifespan=lifespan)
-    app.state.store, app.state.cache, app.state.runner = store, cache, runner
+    app.state.store, app.state.cache, app.state.runner, app.state.votes = store, cache, runner, votes
 
     # ------------------------------------------------------------ helpers
     def load_job(jid: str) -> dict:
@@ -182,6 +183,28 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
         if not job:
             return render(request, "_job_status.html", {"job": None})
         return render(request, "_job_status.html", {"job": job, "position": runner.position(jid)})
+
+    @app.post("/jobs/{jid}/playlists", response_class=HTMLResponse)
+    def resize_playlists(request: Request, jid: str, size: int = Form(default=20)):
+        """Rebuild the playlists at another size from cached top tracks; returns the status partial (HTMX)."""
+        load_job(jid)
+        job = runner.rebuild_playlists(jid, size)
+        return render(request, "_job_status.html", {"job": job, "position": 0})
+
+    @app.post("/jobs/{jid}/feedback", response_class=HTMLResponse)
+    def feedback(request: Request, jid: str, artist: str = Form(...), vote: int = Form(...)):
+        """Anonymous thumbs up/down on a recommended artist (D-13); returns the vote cell (HTMX)."""
+        job = load_job(jid)
+        vote = 1 if vote > 0 else -1
+        rec = next((r for r in job["result"].get("recommendations") or [] if r["name"] == artist), None)
+        if not rec:
+            raise HTTPException(404, "No such recommendation.")
+        family = next((p.get("family", "") for p in job["result"].get("profiles") or [] if p["id"] == rec.get("profile")), "")
+        votes.vote(jid, artist, vote, family)
+        result = dict(job["result"])
+        result.setdefault("votes", {})[artist] = vote
+        store.update(jid, result=result)
+        return render(request, "_vote.html", {"job": job, "artist": artist, "vote": vote})
 
     @app.get("/jobs/{jid}/playlists/{pid}.txt")
     def download_playlist(jid: str, pid: str):

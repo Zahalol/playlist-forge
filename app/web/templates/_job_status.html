@@ -27,8 +27,9 @@
 {% if recs %}
 <h3>Artists you might like</h3>
 <p><small>Picked from the artists that listeners of your artists also play, balanced across your profiles. Bars show how strongly each one fits your listening (5 is strongest). Big names that you have skipped are listed separately below.</small></p>
+{% set votes = job.result.get("votes") or {} %}
 <figure><table class="recs">
-  <thead><tr><th>Fit</th><th>Artist</th><th>Profile</th><th>Because you listen to</th></tr></thead>
+  <thead><tr><th>Fit</th><th>Artist</th><th>Profile</th><th>Because you listen to</th><th title="Anonymous feedback helps improve the picks">Your take</th></tr></thead>
   <tbody>
   {% for r in recs %}
     <tr>
@@ -36,6 +37,7 @@
       <td>{{ r.name }}</td>
       <td><small>{% for p in profiles if p.id == r.profile %}{{ p.name }}{% endfor %}</small></td>
       <td><small>{{ r.because | join(", ") }}</small></td>
+      <td>{% with artist = r.name, vote = votes.get(r.name, 0) %}{% include "_vote.html" %}{% endwith %}</td>
     </tr>
   {% endfor %}
   </tbody>
@@ -51,6 +53,13 @@
 {% if playlists %}
 <h3 id="playlists">Your playlists</h3>
 <p><small>One playlist per profile: a few of your own favourites to set the tone, new picks from the artists above, and deep cuts from artists you play only now and then. Copy the text, or download it, then import it into Spotify with the steps below.</small></p>
+<form class="plsize" hx-post="/jobs/{{ job.id }}/playlists" hx-target="#job-status" hx-swap="innerHTML">
+  <label>Songs per playlist
+    <input type="number" name="size" min="5" max="50" value="{{ job.result.get('playlist_size') or 20 }}">
+  </label>
+  <button type="submit" class="outline secondary">Rebuild</button>
+  <small>5 to 50. Soundiiz takes up to 200 per playlist.</small>
+</form>
 {% for pl in playlists %}
 <article class="playlist">
   <header>
