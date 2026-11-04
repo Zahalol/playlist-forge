@@ -31,12 +31,14 @@ One row per decision. Add new ones at the bottom of Decided or Open. Last update
 | D-23 | Period detection | Classify each file's category and period from content (docs/SKILEY_PERIOD_CLASSIFIER.md); show labels with confidence; user can override; never trust file names for the period | Browsers rename duplicate downloads; Skiley file names do not include the period. | 2026-11-04 |
 | D-24 | Playlist line order | "Artist - Song" | Mike's Soundiiz test: both orders imported to Spotify correctly; Artist - Song matches the original brief. | 2026-11-04 |
 | D-26 | Extra test exports | Synthetic personas generated from Deezer genre charts (scripts/make_synthetic_fixtures.py) instead of friends' exports: mainstream, country_classic, narrow_electronic, heavy | No privacy question; reproducible; covers tastes unlike Mike's. Real friends' exports can still be added later with consent. | 2026-11-04 |
+| D-27 | Primary data source | Last.fm for everything in the MVP: artist tags, similar artists, listener counts (popularity), top tracks. Deezer only as a fallback when Last.fm has no data. Songs inherit artist tags; track.getSimilar is a bonus for older songs. | Smoke test (docs/LASTFM_SMOKE_RESULTS.md): 95-100% artist tag coverage, 100% similar artists, sensible listener counts; song similarity empty for recent releases. One source is simpler and Deezer may close. | 2026-11-04 |
 
 ## Open
 
 | ID | Question | Options | Recommendation |
 |---|---|---|---|
 | D-25 | Profile cap for small libraries | Always try for several profiles, or allow 1-2 | Allow 1-2; the narrow_electronic persona is the test case. |
+| D-28 | Last.fm request pacing | (a) 1 request/second, the safe reading of the terms; (b) about 3/second with backoff on error 29 (rate limit) | (a) plus progressive results: profile from the top 40 artists first (about 80 calls, under 90 seconds), fill in the rest and the recommendations in the background, and rely on the shared cache. Move to (b) only if real users find it too slow and Last.fm does not complain. |
 
 ## Superseded
 
