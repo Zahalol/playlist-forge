@@ -18,7 +18,7 @@ What exists:
 - Evaluation docs: LASTFM_SMOKE_RESULTS.md, API_EVALUATION.md (MusicBrainz, ListenBrainz and ten other APIs; Last.fm stays primary, ListenBrainz is the v0.2 second opinion, D-29).
 - 44 tests, all passing: classifier, parser, personas, enrichment and cache, Last.fm client against mocked HTTP (parsing, throttle, retry, not found, bad key, giving up), job stages and priority, bad-key failure, restart resume, web flow.
 
-**Live check (2026-11-04, real Last.fm key, browser pane):** Mike's 9 files -> 127 artists to enrich. Quick stage finished in about 65 seconds with 40 of 40 artists found, 39 tagged, 40 with similar artists. Full stage filled in the remaining 87 artists in the background at 1 request/second.
+**Live check (2026-11-04, real Last.fm key, browser pane):** Mike's 9 files -> 127 artists to enrich. Quick stage finished in about 65 seconds with 40 of 40 artists found, 39 tagged, 40 with similar artists. Full stage filled in the remaining 87 artists in the background at 1 request/second; whole job done in about 5.5 minutes with 127 of 127 found, 118 tagged, 125 with similar artists. No server errors. A second upload of the same artists would now be served from the cache.
 
 **Old OneDrive folder** (`Documents\Life\Music\Spotify Stats and Recs`): archive only.
 
