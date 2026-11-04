@@ -2,7 +2,7 @@
 {% block title %}Export guide - Playlist Forge{% endblock %}
 {% block content %}
 <h2>Get your listening stats out of Spotify</h2>
-<p>Playlist Forge reads the text files that <a href="https://skiley.net/stats" target="_blank" rel="noopener">Skiley</a> exports from your Spotify account. It takes about three minutes the first time.</p>
+<p>Playlist Forge reads the text files that <a href="https://skiley.net/stats" target="_blank" rel="noopener">Skiley</a> exports from your Spotify account. The whole thing takes about three minutes.</p>
 
 <article>
   <h3>Two sign-ins, neither of them here</h3>
@@ -12,19 +12,19 @@
 <h3>Step by step</h3>
 <ol class="guide">
   <li>
-    <strong>Open Skiley's stats page</strong> at <a href="https://skiley.net/stats" target="_blank" rel="noopener">skiley.net/stats</a> and sign in with Spotify when it asks.
-    {% if "01-skiley-login.png" in shots %}<figure><img src="/static/guide/01-skiley-login.png" alt="Skiley's stats page with the Spotify sign-in button" loading="lazy"></figure>{% endif %}
+    <strong>Open <a href="https://skiley.net" target="_blank" rel="noopener">skiley.net</a> and click Connect with Spotify.</strong> Spotify shows what Skiley may read; agree to continue. Skiley is free for this; you do not need Pro.
+    {% if "01-skiley-login.jpg" in shots %}<figure><img src="/static/guide/01-skiley-login.jpg" alt="Skiley's landing page with the Connect with Spotify button" loading="lazy"></figure>{% endif %}
   </li>
   <li>
-    <strong>Pick a list and a time range.</strong> Skiley shows your Top Tracks, Top Artists and Top Genres for the last 4 weeks, last 6 months and last 12 months. Each combination is one file, nine in all.
-    {% if "02-skiley-lists.png" in shots %}<figure><img src="/static/guide/02-skiley-lists.png" alt="Skiley's Top Tracks list with the time range selector" loading="lazy"></figure>{% endif %}
+    <strong>Open Stats in the left menu and pick a time range.</strong> The tabs are Last 4 weeks, Last 6 months and Last 12 months (ignore Last hours). Below the tabs are three sections: My top artists, My top songs and My top genres.
+    {% if "02-skiley-lists.jpg" in shots %}<figure><img src="/static/guide/02-skiley-lists.jpg" alt="Skiley's Stats page: time range tabs and the My top artists section with its Export to TXT file button" loading="lazy"></figure>{% endif %}
   </li>
   <li>
-    <strong>Export each list as text.</strong> Use Skiley's export (download) button for the list you are looking at. Your browser saves a file such as <code>Top_Tracks_-_Skiley_Export.txt</code>; later downloads of the same list get a number added, like <code>Top_Tracks_-_Skiley_Export__2_.txt</code>. That is fine: Playlist Forge reads the contents, not the file name.
-    {% if "03-skiley-export.png" in shots %}<figure><img src="/static/guide/03-skiley-export.png" alt="Skiley's export button" loading="lazy"></figure>{% endif %}
+    <strong>Click Export to TXT file on each section.</strong> The button sits at the right of each section heading. Do it for artists, songs and genres, then switch to the next time range and repeat. Nine exports in all; the three 12-month ones are enough to start.
   </li>
   <li>
-    <strong>Repeat for the other lists.</strong> Nine files give the best profiles. In a hurry? The three 12-month files (tracks, artists, genres) are enough to start; you can add the rest later.
+    <strong>Open My Tasks (bottom left) and download each file.</strong> Every export shows up as a finished task with a Download TXT button. Your browser saves files such as <code>Top_Tracks_-_Skiley_Export.txt</code>; repeats get a number added, like <code>Top_Tracks_-_Skiley_Export__2_.txt</code>. That is fine: Playlist Forge reads the contents, not the file name.
+    {% if "03-skiley-export.jpg" in shots %}<figure><img src="/static/guide/03-skiley-export.jpg" alt="Skiley's Tasks panel listing finished exports, each with a Download TXT button" loading="lazy"></figure>{% endif %}
   </li>
   <li>
     <strong>Upload the files here.</strong> Go to <a href="/upload">Start</a>, select all the files at once, and check the time periods we detected. Then build.

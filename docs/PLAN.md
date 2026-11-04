@@ -94,7 +94,7 @@ See ARCHITECTURE.md "Recommendation approach" for the design and the Last.fm cal
 - [x] About and privacy page (`/about`) with attribution for Last.fm, Skiley, Soundiiz, TuneMyMusic, FastAPI, htmx, Pico; footer links. Deezer is not used (D-27), so not credited. (2026-11-04)
 - [x] Mobile check of the whole flow in the browser pane at 375 px: no horizontal scroll; the recommendations table hides the "because" column and stacks the vote buttons. (2026-11-04)
 - [x] Limits: 100 KB per file, 12 files, 8 uploads per visitor address per hour (in-memory sliding window, X-Forwarded-For aware), results deleted after 24 hours. (2026-11-04)
-- [ ] Mike: take the three Skiley screenshots for the guide.
+- [x] Guide screenshots cropped from Mike's screen recording; guide steps match Skiley's real flow (Connect with Spotify, Stats, Export to TXT file per section, My Tasks, Download TXT). (2026-11-04)
 - [ ] Deploy to the Reserved VM and send the link to friends.
 - Done when: 5 friends use it unaided and the top 3 complaints are fixed.
 

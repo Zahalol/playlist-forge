@@ -15,7 +15,7 @@ Short backlog. Current state, open items and next steps live in HANDOFF.md; phas
 - [ ] Recommendation tuning with real playlists in hand: "member of" duplicates (Jerry Garcia for Grateful Dead), mashup names ("Bob Dylan and The Band"), one-seed musicals picks with tiny listener counts, and whether 50 overall recommendations is the right length.
 
 ## Mike (next)
-- [ ] Three Skiley screenshots into app/web/static/guide/ (names in its README).
+- [x] Three Skiley screenshots in app/web/static/guide/, cropped from Mike's screen recording; guide steps rewritten to match Skiley's real flow (2026-11-04).
 - [ ] Replit: `git pull origin main`, then deploy to the Reserved VM (Secrets: LASTFM_API_KEY, DATABASE_URL) and send the link to friends.
 
 ## Claude (after Phase 4)

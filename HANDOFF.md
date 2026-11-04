@@ -20,10 +20,10 @@ _Date: 2026-11-04 - Session 2_
 - [ ] Profile placements noted earlier still stand (Red Hot Chili Peppers and DISPATCH in Indie & Alternative; "Indie Country & Country Rock" for the mainstream persona).
 - [ ] Profile rename/merge (D-31), cookie link-back, demo results page, export guide page, Phase 5 polish: TODO.md.
 - [ ] Deployment to the Reserved VM: nothing blocks it now. Note the in-memory rate limiter resets on restart (fine for one process).
-- [ ] Guide screenshots: three PNGs named in app/web/static/guide/README.md; the page hides the figures until they exist.
+- [x] Guide screenshots in place (jpg, from Mike's recording).
 
 ## Next steps
-1. Mike: pull on Replit, add the three Skiley screenshots to `app/web/static/guide/` (names in its README), deploy to the Reserved VM, send the link to friends.
+1. Mike: pull on Replit, deploy to the Reserved VM (Secrets: LASTFM_API_KEY; DATABASE_URL is set automatically by Replit's database), send the link to friends.
 2. Recommendation tuning from TODO.md once friends have used it; read the `feedback` table (FeedbackStore.summary()).
 3. Deferred items in TODO.md (rename/merge D-31, cookie link-back, demo page).
 
