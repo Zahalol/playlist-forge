@@ -23,6 +23,7 @@ from app.db import ArtistCache, JobStore, make_engine
 from app.jobs import JobRunner
 from app.pipeline.classify import CATEGORIES, PERIODS, ClassifyResult, apply_overrides, classify
 from app.pipeline.parse import parse, records_csv
+from app.pipeline.profile import snapshot
 from app.pipeline.weights import artist_weights
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -158,10 +159,12 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
     def build(jid: str):
         job = load_job(jid)
         if job["status"] == "review":
-            weights = artist_weights(parse(classified(job)))
+            parsed = parse(classified(job))
+            weights = artist_weights(parsed)
             names = list(weights)[:MAX_ARTISTS]
             job["input"]["artists"] = names
             job["input"]["weights"] = {n: weights[n] for n in names}
+            job["input"]["listening"] = snapshot(parsed)
             store.update(jid, input=job["input"], status="queued", stage="", done=0, total=len(names))
             runner.submit(jid)
         return RedirectResponse(f"/jobs/{jid}", status_code=303)

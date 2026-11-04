@@ -68,13 +68,13 @@ The initial push covers Phases 0 to 4. Phases 2 and 3 are the bulk of the work: 
 - [x] Job runner: one worker thread with a priority queue on the VM, job state and progress in the database, job id in the URL. (Cookie link-back moved to TODO.)
 - Done criterion revised (D-28): first results in about a minute (top 40 artists), the rest in the background; repeat artists are free. Live run: quick stage about 65 seconds on Mike's export.
 
-### Phase 3 - Profiling
-- [ ] Tag-family taxonomy in `app/pipeline/taxonomy.json` (about 15 families).
-- [ ] Each artist gets a family vector from Last.fm tags and Deezer genre. The user's own Skiley genre shares act as a prior and drive the profile names.
-- [ ] Assign each artist to its strongest family; split any family over 40% of taste by Last.fm similarity; merge families under 3%; cap at 8. Artists with no tags go to an "unresolved" bucket that the user can see.
-- [ ] Template-based names and descriptions (share, recent trend from the 4-week list, core artists, signature songs, obscurity).
-- [ ] Rename and merge on the results page.
-- Done when: the fixture produces profiles close to the proof of concept's eight, and the friends' exports produce sensible profiles too.
+### Phase 3 - Profiling (done 2026-11-04)
+- [x] Tag-family taxonomy in `app/pipeline/taxonomy.json` (16 families).
+- [x] Family mix per artist from Last.fm tags blended with similar artists' tags; the user's Skiley genre shares act as a prior (D-30). Tagless artists borrow tags from neighbours.
+- [x] Strongest family wins; families over 40% split when both halves are 8%+ of total; under 3% dissolve; cap 8; unplaced artists shown with a reason.
+- [x] Template names and descriptions (share, trend, core artists, styles, how well known, signature songs).
+- [ ] Rename and merge on the results page: moved to after Phase 4 (D-31).
+- Done: Mike's export gives 7 profiles close to the proof of concept's 8 (musicals, emo/pop punk, Americana, jam band, classic rock, pop, indie); the four synthetic personas (in place of friends' exports) give sensible 4-6 profiles each.
 
 ### Phase 4 - Recommendations and playlists
 - [ ] Port the scoring from poc/scripts/build_profiles_recs.py: strongest-8-links score, popularity dampener, household-name side list, per-profile quotas, balanced order. Show a 1 to 5 fit bar instead of a percentage.

@@ -63,8 +63,10 @@ def test_build_runs_quick_then_full(unlabeled_files):
     runner.process(j, stage)
     job = store.get(jid)
     assert job["status"] == "ready" and len(job["result"]["artists"]) == 10
-    assert "Filling in the rest" not in c.get(f"/jobs/{jid}/status").text   # ready, full not started yet
-    assert "What Last.fm knows" in c.get(f"/jobs/{jid}/status").text
+    assert job["result"]["preliminary"] and job["result"]["profiles"]
+    page = c.get(f"/jobs/{jid}/status").text
+    assert "Filling in the rest" not in page                                 # ready, full not started yet
+    assert "Your taste profiles" in page and "first look" in page
     # full stage
     runner.run_pending()
     job = store.get(jid)
@@ -75,6 +77,10 @@ def test_build_runs_quick_then_full(unlabeled_files):
     assert len([x for x in fake.calls if x[0] == "info"]) == n
     page = c.get(f"/jobs/{jid}/status").text
     assert "(complete)" in page and "every 2s" not in page               # polling stops when done
+    assert not job["result"]["preliminary"]
+    # FakeLastFM tags every artist "rock, indie", so everything lands in one Indie & Alternative profile
+    assert [p["name"] for p in job["result"]["profiles"]] == ["Indie & Alternative"]
+    assert "Indie &amp; Alternative" in page and "of your listening" in page
 
 
 def test_top_artists_go_first(unlabeled_files):

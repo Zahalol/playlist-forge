@@ -2,47 +2,57 @@
 
 ## Current state (2026-11-04)
 
-**Repo**: `C:\dev\playlist-forge` (outside OneDrive), pushed to https://github.com/Zahalol/playlist-forge (public, MIT, branch `main`). Running on Replit (workspace Preview, Postgres, Last.fm key in Secrets) and verified end to end on 2026-11-04; no public deployment yet. Replit workflow: `git pull origin main` in the Replit Shell after each push; the Preview starts the app by itself (no Run button in the new layout). `replit.md` holds Replit-specific notes.
+**Repo**: `C:\dev\playlist-forge` (outside OneDrive), pushed to https://github.com/Zahalol/playlist-forge (public, MIT, branch `main`). Running on Replit (workspace Preview, Postgres, Last.fm key in Secrets); no public deployment yet. Replit workflow: `git pull origin main` in the Replit Shell after each push; the Preview starts the app by itself. `replit.md` holds Replit-specific notes.
 
-**Phases 0, 1 and 2 are done.** A user can upload Skiley files, check the detected periods, press "Build my profiles", and watch Last.fm data for their artists fill in, with first results after about a minute.
+**Phases 0-3 are done.** A user uploads Skiley files, checks the detected periods, presses "Build my profiles", and gets taste profiles: preliminary ones from the top 40 artists in about a minute, final ones when all artists are looked up.
 
 What exists:
-- `app/pipeline/classify.py` and `parse.py`: period detection (docs/SKILEY_PERIOD_CLASSIFIER.md) and parsing. Quick-mode extension: one list per category is assumed to be 12 months.
-- `app/pipeline/weights.py`: recency-weighted artist weights (4 weeks 1.0, 6 months 0.9, 12 months 0.7; songs add 35% to their artist). Decides artist order for enrichment.
-- `app/clients/lastfm.py`: Last.fm client with a global 1 request/second throttle (D-28), retries with backoff on network errors, server errors and rate limits, a hard stop on a bad key, and "not found" as a normal answer.
-- `app/pipeline/enrich.py`: cache-first enrichment (info/listeners, tags, similar artists). Tags never expire; listeners and similar refresh after 90 days. Per-artist errors are recorded, not cached, and retried next time.
-- `app/db.py`: SQLAlchemy Core. `artist_cache` (shared, no user data) and `jobs` (uploads, overrides, results; deleted after 24 hours). Postgres via `DATABASE_URL` on Replit, SQLite file `data/playlist_forge.sqlite` locally, in-memory SQLite in tests.
-- `app/jobs.py`: one worker thread, priority queue. Stage "quick" = top 40 artists, then the job is "ready"; stage "full" = the rest (up to 150), then "done". All quick stages run before any full stage. Unfinished jobs resume on restart. Expired jobs are purged hourly.
-- Web (`app/web/main.py`, app factory `create_app`): upload -> `/review/{id}` (overrides saved in the DB) -> build -> `/jobs/{id}` with an HTMX progress bar polling every 2 seconds and a results summary (artists found, tags, top genre tags, per-artist table). Uploads no longer live in memory.
-- `scripts/prewarm_cache.py`: loads saved Last.fm responses (data/lastfm_smoke.json) into the cache.
-- Evaluation docs: LASTFM_SMOKE_RESULTS.md, API_EVALUATION.md (MusicBrainz, ListenBrainz and ten other APIs; Last.fm stays primary, ListenBrainz is the v0.2 second opinion, D-29).
-- 44 tests, all passing: classifier, parser, personas, enrichment and cache, Last.fm client against mocked HTTP (parsing, throttle, retry, not found, bad key, giving up), job stages and priority, bad-key failure, restart resume, web flow.
+- `app/pipeline/classify.py`, `parse.py`: period detection (docs/SKILEY_PERIOD_CLASSIFIER.md) and parsing.
+- `app/pipeline/weights.py`: recency-weighted artist weights.
+- `app/clients/lastfm.py`: Last.fm client, 1 request/second global throttle (D-28), retries, hard stop on a bad key.
+- `app/pipeline/enrich.py`: cache-first enrichment (listeners, tags, similar artists), optional `parts` (tags only for neighbours), and `neighbours_to_borrow_from` for artists with no usable tags.
+- `app/pipeline/taxonomy.json` + `taxonomy.py`: 16 tag families; specific tags full weight, broad one-word genres 0.6, hint words 0.35, noise ignored.
+- `app/pipeline/profile.py`: profiles (D-30): artist family mix = 65% own tags + 35% similar artists' tags, times a prior from the user's Skiley genre shares; strongest family wins; families under 3% dissolve; families over 40% split in two when each half is 8%+ of total listening; cap 8; names (family label, or the leading styles when the label does not fit, or the distinctive styles of each split half); template descriptions (share, trend, core artists, styles, how well known, signature songs, one per artist first); unplaced artists listed with a reason.
+- `app/db.py`, `app/jobs.py`: shared artist cache and jobs; two-stage worker; full stage adds a "borrow" step (tags of up to 8 neighbours for each tagless artist), then computes final profiles.
+- Web: profile cards with share bar, trend label, description and full artist list; Last.fm details folded below.
+- Scripts: `enrich_fixtures.py` (looks up every fixture listener's artists, plus the borrow step, into the local cache), `profile_report.py` (prints profiles for all five listeners from the cache, no network), `prewarm_cache.py`, `make_synthetic_fixtures.py`, smoke tests.
+- 59 tests, all passing, including 15 taxonomy/profile unit tests on made-up listeners and profile assertions in the web flow.
 
-**Live check (2026-11-04, real Last.fm key, browser pane):** Mike's 9 files -> 127 artists to enrich. Quick stage finished in about 65 seconds with 40 of 40 artists found, 39 tagged, 40 with similar artists. Full stage filled in the remaining 87 artists in the background at 1 request/second; whole job done in about 5.5 minutes with 127 of 127 found, 118 tagged, 125 with similar artists. No server errors. A second upload of the same artists would now be served from the cache.
+**Profile results (local cache, 2026-11-04):**
+| Listener | Profiles |
+|---|---|
+| Mike | Indie & Alternative 24% (growing), Emo & Pop Punk 22%, Pop 16% (quieter lately), Americana, Country & Folk 13%, Musicals & Soundtracks 11%, Classic Rock & Heartland 8% (growing), Jam Band & Bluegrass 6%. Unplaced: Foenem (only hip-hop artist), Yusuf / Cat Stevens (no genre data), White Noise Therapy. |
+| country_classic | Country Pop & Contemporary Country 52%, Classic Rock & Heartland 22%, Folk Rock & Americana 12%, Indie & Alternative 11%, R&B, Soul & Funk 4% |
+| heavy | Metal & Heavy Rock 35%, Indie & Alternative 22%, Classic Rock & Heartland 14%, Punk Rock & Horror Punk 14%, Pop 6%, Jazz & Blues 6% |
+| mainstream | Pop 34%, Hip-Hop & Rap 24%, R&B, Soul & Funk 17%, Latin 8%, Indie Country & Country Rock 8%, Classic Rock & Heartland 8% |
+| narrow_electronic | Techno & Electro House 41%, UK Garage & Electro 32%, Pop 13%, R&B, Soul & Funk 7%, Indie & Alternative 6% |
+
+Operation Mincemeat, Sara Chase and other cast members with no usable Last.fm tags are placed in Musicals by borrowing tags from their similar artists. Live run in the browser: Mike's upload with a warm cache showed final profiles in about 20 seconds; no server errors.
 
 **Old OneDrive folder** (`Documents\Life\Music\Spotify Stats and Recs`): archive only.
 
 ## Open issues
-- The results page shows Last.fm facts, not taste profiles yet. Top tags are dominated by broad words (rock, indie); Phase 3's taxonomy and thin-tag borrowing fix this.
-- Replit's assistant once edited files directly, which split the history; it was merged. Keep code changes local and pull on Replit.
-- One worker thread means a long full stage delays other users' full stages (not their quick stages). Fine for a friends launch.
-- The job page link is the only way back to a result (no cookie yet).
-- starlette warns that its TestClient will want `httpx2`; harmless for now.
-- Open decision: D-25 profile count for small libraries.
+- Profile names use the taxonomy label or tag names; a few read oddly (for example "Indie Country & Country Rock" where "Country" would do). Rename/merge by the user is planned after Phase 4 (D-31).
+- Some artists land in debatable profiles (Red Hot Chili Peppers and DISPATCH in Indie & Alternative; Kanye West in Pop because he is the only hip-hop artist with Pop tags). Tuning lives in taxonomy.json and the constants at the top of profile.py; re-check with `scripts/profile_report.py`.
+- The borrow step adds up to about 2 minutes for a first-time user with many tagless artists.
+- Synthetic personas come from current charts, so they skew to recent hits.
+- One worker thread: a long full stage delays other users' full stages (not their quick stages).
+- No cookie link back to a result yet; starlette `httpx2` warning in tests is harmless.
 
 ## Next steps
-1. Claude: Phase 3, profiling: tag-family taxonomy, Skiley genre prior, thin-tag borrowing from similar artists, profile names and descriptions, tested on Mike and the four personas.
+1. Mike on Replit: `git pull origin main`, then upload and build to see the profiles there.
+2. Claude: Phase 4, recommendations and playlists: candidate artists from Last.fm similar lists, popularity dampener recalibrated on Last.fm listener counts, per-profile recommendations, top tracks of recommended artists, playlist text for Soundiiz.
 
 ## Run
 ```
 cd C:\dev\playlist-forge
 .venv\Scripts\activate
-python scripts/prewarm_cache.py      # optional, after scripts/lastfm_smoke.py
 uvicorn app.web.main:app --reload
 pytest
+python scripts/profile_report.py          # profiles for all fixture listeners from the local cache
 ```
 
 ## Resume prompt
 ```
-Continue Playlist Forge in C:\dev\playlist-forge. Read HANDOFF.md, TODO.md and docs/PLAN.md first. Phases 0-2 are done (upload, period detection, Last.fm enrichment with a shared cache and two-stage background jobs; 44 tests). Next: Phase 3 profiling.
+Continue Playlist Forge in C:\dev\playlist-forge. Read HANDOFF.md, TODO.md and docs/PLAN.md first. Phases 0-3 are done (upload, period detection, Last.fm enrichment, taste profiles; 59 tests). Next: Phase 4 recommendations and playlists.
 ```

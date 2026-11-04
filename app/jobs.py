@@ -17,7 +17,10 @@ import time
 from typing import Callable
 
 from app.db import ArtistCache, JobStore
-from app.pipeline.enrich import enrich_artists, summarize
+from app.pipeline.enrich import enrich_artists, neighbours_to_borrow_from, summarize
+from app.pipeline.profile import build_profiles
+from app.pipeline.taxonomy import load as load_taxonomy
+from app.pipeline.text import artist_key
 
 log = logging.getLogger("playlist_forge.jobs")
 
@@ -101,6 +104,18 @@ class JobRunner:
             self._fetcher = self.fetcher_factory()
         return self._fetcher
 
+    # ------------------------------------------------------------ profiles
+    def _profiles(self, job: dict, entries: dict[str, dict]) -> dict:
+        snap = job["input"].get("listening")
+        weights = job["input"].get("weights", {})
+        if not snap:
+            return {"profiles": [], "unresolved": []}
+        found = {a: e for a, e in entries.items() if e.get("found")}
+        neighbour_keys = {artist_key(n) for e in found.values() for n, _ in (e.get("similar") or [])[:10]}
+        lookup = self.cache.get_many(sorted(neighbour_keys))
+        sub_weights = {a: weights.get(a, 0.0) for a in entries}
+        return build_profiles(snap, sub_weights, found, lookup)
+
     # ------------------------------------------------------------ one task
     def process(self, jid: str, stage: str) -> None:
         from app.clients.lastfm import LastFMKeyError
@@ -121,7 +136,15 @@ class JobRunner:
                 self.store.update(jid, done=done, total=total)
 
         try:
-            entries = enrich_artists(names, self.cache, self._get_fetcher(), on_progress=progress)
+            fetcher = self._get_fetcher()
+            entries = enrich_artists(names, self.cache, fetcher, on_progress=progress)
+            if stage == "full" or len(artists) <= len(names):
+                # finishing touch: tags of similar artists, for the user's artists that have no usable tags
+                borrow = neighbours_to_borrow_from(entries, load_taxonomy())
+                if borrow:
+                    self.store.update(jid, stage="borrow", done=0, total=len(borrow))
+                    enrich_artists(borrow, self.cache, fetcher, on_progress=progress, parts=("tags",))
+            profiles = self._profiles(job, entries)
         except LastFMKeyError as e:
             log.error("job %s stopped: %s", jid, e)
             self.store.update(jid, status="failed", error="The music data service is not configured correctly. "
@@ -141,6 +164,9 @@ class JobRunner:
             for n, e in entries.items()
         ]
         result["stage_done"] = stage
+        result["profiles"] = profiles["profiles"]
+        result["unresolved"] = profiles["unresolved"]
+        result["preliminary"] = stage == "quick" and len(artists) > len(names)
         if stage == "quick" and len(artists) > len(names):
             self.store.update(jid, status="ready", result=result, done=len(names), total=len(names))
             self.submit(jid, "full")

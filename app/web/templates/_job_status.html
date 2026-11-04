@@ -3,6 +3,7 @@
 {% else %}
 {% set live = job.status in ("queued", "running", "ready") %}
 {% set summary = job.result.get("summary") %}
+{% set profiles = job.result.get("profiles") or [] %}
 
 {% if job.status == "failed" %}
 <article style="border-left: 4px solid #c62828">
@@ -13,36 +14,57 @@
 <article aria-busy="true">Waiting to start{% if position %} ({{ position }} ahead of you){% endif %}...</article>
 {% elif live %}
 <article>
-  <strong>{% if job.stage == "quick" %}Looking up your top artists{% else %}Filling in the rest of your artists{% endif %}</strong>
+  <strong>{% if job.stage == "quick" %}Looking up your top artists{% elif job.stage == "borrow" %}Finishing touches: checking artists with few genre tags{% else %}Filling in the rest of your artists{% endif %}</strong>
   <progress value="{{ job.done }}" max="{{ job.total or 1 }}"></progress>
-  <small>{{ job.done }} of {{ job.total }} artists{% if job.stage == "quick" %}. First results appear when this bar is full.{% else %}. Results below update as this finishes.{% endif %}</small>
+  <small>{{ job.done }} of {{ job.total }}{% if job.stage == "quick" %} artists. Your first profiles appear when this bar is full.{% else %}. Your profiles below will sharpen when this finishes.{% endif %}</small>
 </article>
 {% endif %}
 
+{% if profiles %}
+<h3>Your taste profiles{% if job.result.get("preliminary") %} <small>(first look, based on your top artists)</small>{% endif %}</h3>
+{% for p in profiles %}
+<article class="profile">
+  <header>
+    <strong>{{ p.name }}</strong>
+    <span class="share">{{ (p.share * 100) | round | int }}%</span>
+    {% if p.trend == "growing" %}<small class="trend up">growing lately</small>{% elif p.trend == "fading" %}<small class="trend down">quieter lately</small>{% endif %}
+    <div class="sharebar"><span style="width: {{ (p.share * 100) | round | int }}%"></span></div>
+  </header>
+  <p>{{ p.description }}</p>
+  <details>
+    <summary>All {{ p.artists | length }} artists</summary>
+    <p><small>{{ p.artists | join(", ") }}</small></p>
+    {% if p.skiley_genres %}<p><small>Matching genres in your Skiley export: {{ p.skiley_genres | join(", ") }}</small></p>{% endif %}
+  </details>
+</article>
+{% endfor %}
+{% if job.result.get("unresolved") %}
+<p><small>Didn't fit a profile:
+{% for u in job.result.unresolved %}{% if u is mapping %}{{ u.artist }} ({{ u.reason }}){% else %}{{ u }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor %}</small></p>
+{% endif %}
+<p><small>Recommendations and playlists for each profile are the next build step.</small></p>
+{% endif %}
+
 {% if summary %}
-<article>
-  <header><strong>What Last.fm knows about your artists</strong>{% if job.status == "done" %} <small>(complete)</small>{% endif %}</header>
+<details>
+  <summary>What Last.fm knows about your artists{% if job.status == "done" %} (complete){% endif %}</summary>
   <p>{{ summary.found }} of {{ summary.artists }} artists found, {{ summary.tagged }} with genre tags, {{ summary.with_similar }} with similar artists.
   {% if summary.errors %}{{ summary.errors }} could not be looked up right now and will be retried next time.{% endif %}</p>
-  <p><strong>Your strongest genre tags:</strong> {{ summary.top_tags | join(", ") }}</p>
-  <details>
-    <summary>Artist details</summary>
-    <figure><table>
-      <thead><tr><th>Artist</th><th>Listeners</th><th>Top tags</th><th>Similar</th></tr></thead>
-      <tbody>
-      {% for a in job.result.artists %}
-        <tr>
-          <td>{{ a.name }}{% if a.lastfm_name and a.lastfm_name != a.name %} <small>({{ a.lastfm_name }})</small>{% endif %}</td>
-          <td>{% if a.found %}{{ "{:,}".format(a.listeners) }}{% else %}<small>not found</small>{% endif %}</td>
-          <td>{{ a.tags | join(", ") }}</td>
-          <td>{{ a.n_similar }}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table></figure>
-  </details>
-  <p><small>Taste profiles, recommendations and playlists are the next build step. Music data powered by <a href="https://www.last.fm" target="_blank" rel="noopener">Last.fm</a>.</small></p>
-</article>
+  <figure><table>
+    <thead><tr><th>Artist</th><th>Listeners</th><th>Top tags</th><th>Similar</th></tr></thead>
+    <tbody>
+    {% for a in job.result.artists %}
+      <tr>
+        <td>{{ a.name }}{% if a.lastfm_name and a.lastfm_name != a.name %} <small>({{ a.lastfm_name }})</small>{% endif %}</td>
+        <td>{% if a.found %}{{ "{:,}".format(a.listeners) }}{% else %}<small>not found</small>{% endif %}</td>
+        <td>{{ a.tags | join(", ") }}</td>
+        <td>{{ a.n_similar }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></figure>
+</details>
+<p><small>Music data powered by <a href="https://www.last.fm" target="_blank" rel="noopener">Last.fm</a>.</small></p>
 {% endif %}
 
 {% if live %}

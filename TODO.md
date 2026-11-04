@@ -8,12 +8,13 @@ Phases and milestones live in docs/PLAN.md. Last updated 2026-11-04.
 - [ ] Avoid asking Replit's Agent to change code; its edits create saves GitHub does not have.
 
 ## Claude (next sessions)
-- [ ] Phase 3: `app/pipeline/taxonomy.json` (about 15 tag families) and `profile.py`: family vectors from Last.fm tags, Skiley genre shares as prior, thin-tag borrowing (tags shared by 3+ similar artists), split families over 40%, merge under 3%, 1-8 profiles, unresolved bucket, template names and descriptions. Test on Mike and the four personas.
-- [ ] Phase 4 prep: recalibrate the popularity dampener on Last.fm listener counts; add artist.getTopTracks to the enrichment of recommended artists.
+- [ ] Phase 4: recommendations and playlists. Candidates from Last.fm similar lists (excluding the user's artists), popularity dampener recalibrated on Last.fm listener counts, household-name side list, per-profile and overall ranking with a 1-5 fit bar, artist.getTopTracks for recommended artists (new fetch stage), playlist builder with "Artist - Song" text and a Soundiiz walkthrough.
+- [ ] After Phase 4: profile rename and merge (D-31).
 - [ ] Replit config check if Run fails (run command, Python version, Postgres connection).
 - [ ] Remember the last job in a cookie so the landing page can link back to it.
 
 ## Done
+- [x] Phase 3: taxonomy (16 families), profile engine with neighbour tag blending and borrowing, Skiley genre prior, merge/split/cap, names, descriptions, profile cards on the results page; 59 tests; checked on Mike and four personas (see HANDOFF.md table).
 - [x] Replit verified end to end (2026-11-04): Postgres connected, Last.fm key in Secrets, Preview runs the app automatically, Mike's 9 files -> 127 of 127 artists found, 118 tagged, 126 with similar artists. Replit's own edits merged and pushed; `replit.md` updated.
 - [x] Phase 2: Last.fm client with 1/s throttle and retries, shared cache (Postgres/SQLite), two-stage background jobs (quick top 40, then full), progress page, cache pre-warm script, 44 tests; live run on Mike's export: first results in about 65 seconds (D-28 decided).
 - [x] MusicBrainz, ListenBrainz and ten other APIs evaluated (docs/API_EVALUATION.md); Last.fm stays primary (D-27), ListenBrainz is the v0.2 second opinion (D-29).

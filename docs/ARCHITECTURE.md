@@ -63,11 +63,14 @@ Planned for v0.2 as a slow background enricher: MusicBrainz (MBIDs, tags, countr
 
 ## Profiling approach
 
-1. A taxonomy file maps about 15 families (emo and pop punk, indie and alt rock, classic and heartland rock, metal and hard rock, modern pop, hip-hop and rap, r&b and soul, country and americana and folk, jam band and bluegrass, electronic and dance, musicals and soundtracks, latin, jazz and blues, reggae and ska, other) to tag keywords.
-2. Each artist gets a family vector from Last.fm tag weights and Deezer genre. The user's Skiley genre shares, mapped to the same families, act as a prior so the families the user actually listens to win ties.
-3. Each artist goes to its strongest family. A family above 40% of taste weight is split in two by Last.fm similarity. Families under 3% merge into the nearest. Maximum 8 profiles. Untagged artists go to "unresolved", shown with a count.
-4. Names come from the family label plus a flavour word from the stats. Descriptions are template sentences built from share, 4-week trend, core artists, signature songs and obscurity. An LLM rewrite is a future flag.
-5. The user can rename profiles and merge two profiles; recommendations recompute.
+Implemented in `app/pipeline/taxonomy.py` + `taxonomy.json` and `app/pipeline/profile.py` (decision D-30).
+
+1. `taxonomy.json` maps 16 families (musicals, emo and pop punk, metal, hip-hop, R&B and soul, electronic, latin, reggae and ska, jam band and bluegrass, Americana/country/folk, classic rock, indie and alternative, pop, jazz and blues, classical, Christian) to tag keywords. Specific tags count fully, broad one-word genres ("folk", "pop") 0.6, hint words ("80s", "acoustic") 0.35, noise ("seen live", places) is ignored. A "contains" rule catches variants.
+2. Each artist's family mix = 65% its own Last.fm tags + 35% the tags of its 10 most similar artists that are in the cache, multiplied by a prior from the user's Skiley genre shares. Artists whose own tags say nothing borrow entirely from neighbours; the job fetches tags for up to 8 neighbours of each such artist ("borrow" stage). Names containing "Broadway", "Cast", "Company" lean to musicals.
+3. Each artist joins its strongest family. Families under 3% of taste weight or with one artist dissolve into members' next-best families. A family over 40% splits in two by tag similarity (weighted 2-means) when both halves hold 30%+. Maximum 8 profiles. Artists with no usable data are listed as unresolved.
+4. Names: the family label, or the two leading styles for split families ("Midwest Emo & Math Rock"). Descriptions are template sentences: share, trend (4-week share vs 12-month share), core artists, the most specific styles, how well known the artists are (median Last.fm listeners), signature songs. An LLM rewrite is a future flag.
+5. Quick stage shows preliminary profiles from the top 40 artists; the full stage replaces them.
+6. Rename and merge by the user: after Phase 4 (D-31).
 
 ## Recommendation approach
 
