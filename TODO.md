@@ -5,15 +5,15 @@ Short backlog. Current state, open items and next steps live in HANDOFF.md; phas
 ## Mike (standing)
 - After each push from Claude: in the Replit Shell run `git pull origin main` (and `pip install -r requirements.txt` if requirements changed). The Preview reloads by itself.
 - Do not ask Replit's Agent to change code; its edits create saves GitHub does not have.
-- Deployment (Reserved VM) waits until recommendations and playlists work, so credits are not spent on an incomplete site.
+- Deployment (Reserved VM) can go ahead now that the full workflow and the Soundiiz import work.
 
 ## Mike (Phase 4 done criterion)
-- [ ] Import one generated playlist into Spotify through Soundiiz from the results page and note any lines that did not match.
+- [x] Imported a generated playlist into Spotify through Soundiiz; all songs matched (2026-11-04).
 
 ## Claude (Phase 4 follow-ups)
 - [ ] Playlist size control (20 default, up to 50) on the results page; thumbs up/down (D-13).
 - [ ] Recommendation tuning with real playlists in hand: "member of" duplicates (Jerry Garcia for Grateful Dead), mashup names ("Bob Dylan and The Band"), one-seed musicals picks with tiny listener counts, and whether 50 overall recommendations is the right length.
-- [ ] Deployment to the Reserved VM once Mike's Soundiiz import works.
+- [ ] Deployment to the Reserved VM (the Soundiiz import works, so nothing blocks it).
 
 ## Claude (after Phase 4)
 - [ ] Profile rename and merge on the results page (D-31).

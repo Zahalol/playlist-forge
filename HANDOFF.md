@@ -3,7 +3,7 @@
 ## Current state
 _Date: 2026-11-04 - Session 2_
 
-- Phases 0-3 complete; Phase 4 built end to end except the human step: upload, periods, profiles, artist recommendations, one playlist per profile with Copy / Download .txt and the Soundiiz walkthrough. The Phase 4 done criterion (a playlist imported into Spotify through Soundiiz) is Mike's to do.
+- Phases 0-4 complete: upload, periods, profiles, artist recommendations, one playlist per profile with Copy / Download .txt and the Soundiiz walkthrough. Mike imported a generated playlist into Spotify through Soundiiz and every song matched.
 - Pipeline: `recommend.py` (candidates, listener-relative dampener D-32, quotas, balanced order, fit bars) and `playlist.py` (3 anchors, new picks one per artist, up to 4 deep cuts, title cleaning, "Artist - Song" text).
 - Jobs: stage `recs` (listener counts for up to 150 of the 200 strongest candidates) then step `songs` (top tracks for up to 120 artists), all in the third queue priority. Result JSON holds recommendations, by_profile, big_names, playlists. Restart resumes at the right stage; a failure inside the stage keeps the profiles (`recs_error`).
 - Results page: progress per stage, "Artists you might like" table, Explore line per profile, big names skipped, playlist cards with Copy, Download .txt, "Why these songs", import steps for Soundiiz and TuneMyMusic.
@@ -12,17 +12,18 @@ _Date: 2026-11-04 - Session 2_
 - Commit 4957b17 (Phase 4a) is on GitHub main; Phase 4b (playlists) is committed at the end of this session (see the Git summary). Replit has not pulled Phase 3 or 4. No public deployment.
 
 ## Open items
-- [ ] Mike: `git pull origin main` on Replit, run a build there (recs plus songs add about 4.5 minutes cold), then import one playlist into Spotify through Soundiiz and note any lines that did not match.
+- [x] Mike ran the full workflow and imported a playlist into Spotify through Soundiiz: every song matched (Phase 4 done criterion met, 2026-11-04).
+- [ ] Mike: `git pull origin main` on Replit and run a build there if not done yet (recs plus songs add about 4.5 minutes cold).
 - [ ] Playlist size control on the results page (builder accepts 5-50; page always shows 20). Thumbs up/down (D-13).
 - [ ] Recommendation quirks to revisit with real playlists: band members and side projects as recs (Jerry Garcia for Grateful Dead, Rivers Cuomo for Weezer, John Fogerty for CCR); mashup names ("Bob Dylan and The Band"); one-seed musicals recs with tiny listener counts (Pet Needs, 6K, from Operation Mincemeat alone); whether 50 recs overall is the right length.
 - [ ] Profile placements noted earlier still stand (Red Hot Chili Peppers and DISPATCH in Indie & Alternative; "Indie Country & Country Rock" for the mainstream persona).
 - [ ] Profile rename/merge (D-31), cookie link-back, demo results page, export guide page, Phase 5 polish: TODO.md.
-- [ ] Deployment to the Reserved VM once the Soundiiz import works.
+- [ ] Deployment to the Reserved VM: nothing blocks it now.
 
 ## Next steps
-1. Mike: pull on Replit, build, import a playlist through Soundiiz. Report which lines failed to match (that feeds `clean_title`).
-2. Fix whatever the import shows; then the playlist size control and thumbs up/down if wanted.
-3. Phase 5 (docs/PLAN.md): guide page with screenshots, about/privacy page with attributions, mobile check, per-IP limits, then deploy.
+1. Playlist size control on the results page and thumbs up/down (D-13).
+2. Phase 5 (docs/PLAN.md): guide page with screenshots, about/privacy page with attributions, mobile check, per-IP limits, then deploy to the Reserved VM.
+3. Recommendation tuning from TODO.md once friends have used it.
 
 ## How to run things
 ```
@@ -53,6 +54,6 @@ Replit Shell: `git pull origin main`, then `pip install -r requirements.txt` if 
 ```
 Project: C:\dev\playlist-forge (Playlist Forge; GitHub Zahalol/playlist-forge)
 Read first: HANDOFF.md, CLAUDE.md, TODO.md, docs/PLAN.md (Phase 4 and 5), docs/ARCHITECTURE.md, docs/DECISIONS.md
-State: Phases 0-4 built (upload, periods, profiles, recommendations, playlists with Soundiiz steps; 83 tests pass, pushed to main). Waiting on Mike's Soundiiz import test and the Replit pull.
-Next: act on the Soundiiz import results (title cleaning), then playlist size control / thumbs, then Phase 5 polish and deployment.
+State: Phases 0-4 done (83 tests pass, pushed to main; Soundiiz import verified, all songs matched).
+Next: playlist size control and thumbs up/down, then Phase 5 polish (guide, about/privacy, mobile, limits) and deployment to the Reserved VM.
 ```

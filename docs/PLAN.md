@@ -76,7 +76,7 @@ The initial push covers Phases 0 to 4. Phases 2 and 3 are the bulk of the work: 
 - [ ] Rename and merge on the results page: moved to after Phase 4 (D-31).
 - Done: Mike's export gives 7 profiles close to the proof of concept's 8 (musicals, emo/pop punk, Americana, jam band, classic rock, pop, indie); the four synthetic personas (in place of friends' exports) give sensible 4-6 profiles each.
 
-### Phase 4 - Recommendations and playlists (next)
+### Phase 4 - Recommendations and playlists (done 2026-11-04)
 See ARCHITECTURE.md "Recommendation approach" for the design and the Last.fm calibration data.
 - [x] `app/pipeline/recommend.py` (pure): candidates from the cached similar lists, the POC scoring (strongest-8-links, breadth bonus, popularity dampener, household side list, per-profile quotas, balanced order), profile per candidate, 1-5 fit bar from quantiles, "because you listen to" reasons. (2026-11-04)
 - [x] Dampener and household threshold recalibrated on Last.fm listener counts (D-32) with `scripts/recs_report.py` on all five fixture listeners. (2026-11-04)
@@ -87,7 +87,7 @@ See ARCHITECTURE.md "Recommendation approach" for the design and the Last.fm cal
 - [ ] Anonymous thumbs up/down (D-13) if time allows.
 - [x] Tests: pure-function tests with made-up data and a web-flow test through recommendations and playlists (83 tests). (2026-11-04)
 - [ ] Playlist size control on the results page (20 default; the builder accepts 5-50 but the page has no control yet).
-- Done when: a real playlist goes from the results page into Spotify through Soundiiz end to end. Mike's step: not done yet.
+- Done: Mike imported a generated playlist into Spotify through Soundiiz on 2026-11-04 and every song matched.
 
 ### Phase 5 - Friends launch polish
 - [ ] Guide screenshots, about and privacy page with attribution for Last.fm, Deezer, Skiley, Soundiiz.
