@@ -2,7 +2,7 @@
 
 ## Current state (2026-11-04)
 
-**Repo**: `C:\dev\playlist-forge` (outside OneDrive), pushed to https://github.com/Zahalol/playlist-forge (public, MIT, branch `main`). Imported into Replit; no deployment yet.
+**Repo**: `C:\dev\playlist-forge` (outside OneDrive), pushed to https://github.com/Zahalol/playlist-forge (public, MIT, branch `main`). Running on Replit (workspace Preview, Postgres, Last.fm key in Secrets) and verified end to end on 2026-11-04; no public deployment yet. Replit workflow: `git pull origin main` in the Replit Shell after each push; the Preview starts the app by itself (no Run button in the new layout). `replit.md` holds Replit-specific notes.
 
 **Phases 0, 1 and 2 are done.** A user can upload Skiley files, check the detected periods, press "Build my profiles", and watch Last.fm data for their artists fill in, with first results after about a minute.
 
@@ -24,15 +24,14 @@ What exists:
 
 ## Open issues
 - The results page shows Last.fm facts, not taste profiles yet. Top tags are dominated by broad words (rock, indie); Phase 3's taxonomy and thin-tag borrowing fix this.
-- `.replit` config is untested on Replit. Postgres on Replit is untested (code path exists: set `DATABASE_URL`).
+- Replit's assistant once edited files directly, which split the history; it was merged. Keep code changes local and pull on Replit.
 - One worker thread means a long full stage delays other users' full stages (not their quick stages). Fine for a friends launch.
 - The job page link is the only way back to a result (no cookie yet).
 - starlette warns that its TestClient will want `httpx2`; harmless for now.
 - Open decision: D-25 profile count for small libraries.
 
 ## Next steps
-1. Mike: in Replit, add the PostgreSQL database (sets `DATABASE_URL`), confirm `LASTFM_API_KEY` in Secrets, press Run, and check `/health` (see TODO.md).
-2. Claude: Phase 3, profiling: tag-family taxonomy, Skiley genre prior, thin-tag borrowing from similar artists, profile names and descriptions, tested on Mike and the four personas.
+1. Claude: Phase 3, profiling: tag-family taxonomy, Skiley genre prior, thin-tag borrowing from similar artists, profile names and descriptions, tested on Mike and the four personas.
 
 ## Run
 ```

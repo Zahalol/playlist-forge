@@ -3,10 +3,9 @@
 Phases and milestones live in docs/PLAN.md. Last updated 2026-11-04.
 
 ## Mike
-- [ ] In Replit: open the Database tool and add a PostgreSQL database (this sets `DATABASE_URL` automatically).
-- [ ] In Replit Secrets: confirm `LASTFM_API_KEY` matches the corrected key in `.env`.
-- [ ] In Replit: pull the latest code from GitHub (Git pane), press Run, open `/health` in the webview. It should say `ok`. Report any error text.
 - [ ] Deployment (Reserved VM) can wait until profiles work, so credits are not spent on an incomplete site.
+- [ ] After each push from Claude: in the Replit Shell run `git pull origin main` (and `pip install -r requirements.txt` if requirements changed). The Preview reloads by itself.
+- [ ] Avoid asking Replit's Agent to change code; its edits create saves GitHub does not have.
 
 ## Claude (next sessions)
 - [ ] Phase 3: `app/pipeline/taxonomy.json` (about 15 tag families) and `profile.py`: family vectors from Last.fm tags, Skiley genre shares as prior, thin-tag borrowing (tags shared by 3+ similar artists), split families over 40%, merge under 3%, 1-8 profiles, unresolved bucket, template names and descriptions. Test on Mike and the four personas.
@@ -15,6 +14,7 @@ Phases and milestones live in docs/PLAN.md. Last updated 2026-11-04.
 - [ ] Remember the last job in a cookie so the landing page can link back to it.
 
 ## Done
+- [x] Replit verified end to end (2026-11-04): Postgres connected, Last.fm key in Secrets, Preview runs the app automatically, Mike's 9 files -> 127 of 127 artists found, 118 tagged, 126 with similar artists. Replit's own edits merged and pushed; `replit.md` updated.
 - [x] Phase 2: Last.fm client with 1/s throttle and retries, shared cache (Postgres/SQLite), two-stage background jobs (quick top 40, then full), progress page, cache pre-warm script, 44 tests; live run on Mike's export: first results in about 65 seconds (D-28 decided).
 - [x] MusicBrainz, ListenBrainz and ten other APIs evaluated (docs/API_EVALUATION.md); Last.fm stays primary (D-27), ListenBrainz is the v0.2 second opinion (D-29).
 - [x] Last.fm smoke test (docs/LASTFM_SMOKE_RESULTS.md).
