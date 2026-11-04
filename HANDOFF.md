@@ -2,46 +2,48 @@
 
 ## Current state (2026-11-04)
 
-**Repo**: `C:\dev\playlist-forge` (outside OneDrive), pushed to https://github.com/Zahalol/playlist-forge (public, MIT, branch `main`). Not yet on Replit.
+**Repo**: `C:\dev\playlist-forge` (outside OneDrive), pushed to https://github.com/Zahalol/playlist-forge (public, MIT, branch `main`). Imported into Replit; no deployment yet.
 
-**Working today (Phase 0 scaffold + Phase 1 core)**
-- FastAPI app with landing page, `/health`, upload (files or paste), period review with override dropdowns, listening summary, CSV download.
-- `app/pipeline/classify.py`: port of the period classifier (docs/SKILEY_PERIOD_CLASSIFIER.md, rules R1-R14). Reproduces the spec on Mike's export: 356 rows, HIGH for all three categories, cross-check pass. Website extension: one list per category is assumed to be 12 months (quick mode); two lists get a LOW guess the user confirms.
-- `app/pipeline/parse.py`: tidy records (category, period, rank, item, title, artist, share), consolidated tracks/artists/genres, CSV export.
-- 25 pytest tests, all passing: classifier reference run, anonymised names, shuffled order, duplicate and short-stray exclusion, quick mode, two-list review, user override, parsing edge cases, CSV quoting, web upload-to-CSV, size limits, expired token, plus classification and parsing of four synthetic personas.
-- Synthetic personas (tests/fixtures/synthetic: mainstream, country_classic, narrow_electronic, heavy) generated from Deezer genre charts by scripts/make_synthetic_fixtures.py. All classify correctly with HIGH confidence even with anonymised file names. They replace friends' exports (D-26).
-- Soundiiz tested by Mike: both "Artist - Song" and "Song - Artist" imported to Spotify. Using "Artist - Song" (D-24).
-- Local `.env` holds Mike's working Last.fm key (gitignored). Replit import done; no deployment yet.
-- Last.fm smoke test done (docs/LASTFM_SMOKE_RESULTS.md, script scripts/lastfm_smoke.py, raw data in data/ which is gitignored): 95-100% of artists have about 10 tags and 30 similar artists; listener counts work for popularity; song similarity is empty for recent releases. Thin-tag artists (Operation Mincemeat) get correct tags by borrowing those shared by 3+ similar artists. Decision D-27: Last.fm is the single primary source, Deezer a fallback.
-- Checked in the browser pane: 9-file upload classifies HIGH and the summary renders.
-- Results are held in memory with a 24-hour expiry. Phase 2 moves them to Postgres.
+**Phases 0, 1 and 2 are done.** A user can upload Skiley files, check the detected periods, press "Build my profiles", and watch Last.fm data for their artists fill in, with first results after about a minute.
 
-**Docs** (in the repo): PLAN (revised scope and phases), ARCHITECTURE, DECISIONS (D-01 to D-27 decided except D-25; D-25 and D-28 open), FUTURE_IDEAS, SKILEY_PERIOD_CLASSIFIER, LASTFM_SMOKE_RESULTS, CLAUDE.md rules.
+What exists:
+- `app/pipeline/classify.py` and `parse.py`: period detection (docs/SKILEY_PERIOD_CLASSIFIER.md) and parsing. Quick-mode extension: one list per category is assumed to be 12 months.
+- `app/pipeline/weights.py`: recency-weighted artist weights (4 weeks 1.0, 6 months 0.9, 12 months 0.7; songs add 35% to their artist). Decides artist order for enrichment.
+- `app/clients/lastfm.py`: Last.fm client with a global 1 request/second throttle (D-28), retries with backoff on network errors, server errors and rate limits, a hard stop on a bad key, and "not found" as a normal answer.
+- `app/pipeline/enrich.py`: cache-first enrichment (info/listeners, tags, similar artists). Tags never expire; listeners and similar refresh after 90 days. Per-artist errors are recorded, not cached, and retried next time.
+- `app/db.py`: SQLAlchemy Core. `artist_cache` (shared, no user data) and `jobs` (uploads, overrides, results; deleted after 24 hours). Postgres via `DATABASE_URL` on Replit, SQLite file `data/playlist_forge.sqlite` locally, in-memory SQLite in tests.
+- `app/jobs.py`: one worker thread, priority queue. Stage "quick" = top 40 artists, then the job is "ready"; stage "full" = the rest (up to 150), then "done". All quick stages run before any full stage. Unfinished jobs resume on restart. Expired jobs are purged hourly.
+- Web (`app/web/main.py`, app factory `create_app`): upload -> `/review/{id}` (overrides saved in the DB) -> build -> `/jobs/{id}` with an HTMX progress bar polling every 2 seconds and a results summary (artists found, tags, top genre tags, per-artist table). Uploads no longer live in memory.
+- `scripts/prewarm_cache.py`: loads saved Last.fm responses (data/lastfm_smoke.json) into the cache.
+- Evaluation docs: LASTFM_SMOKE_RESULTS.md, API_EVALUATION.md (MusicBrainz, ListenBrainz and ten other APIs; Last.fm stays primary, ListenBrainz is the v0.2 second opinion, D-29).
+- 44 tests, all passing: classifier, parser, personas, enrichment and cache, Last.fm client against mocked HTTP (parsing, throttle, retry, not found, bad key, giving up), job stages and priority, bad-key failure, restart resume, web flow.
 
-**Old OneDrive folder** (`Documents\Life\Music\Spotify Stats and Recs`): archive of the planning and proof-of-concept work. Its docs are snapshots; edit docs in the repo from now on.
+**Live check (2026-11-04, real Last.fm key, browser pane):** Mike's 9 files -> 127 artists to enrich. Quick stage finished in about 65 seconds with 40 of 40 artists found, 39 tagged, 40 with similar artists. Full stage filled in the remaining 87 artists in the background at 1 request/second.
+
+**Old OneDrive folder** (`Documents\Life\Music\Spotify Stats and Recs`): archive only.
 
 ## Open issues
-- "Build my profiles" button is a disabled placeholder until Phases 2-4.
-- `.replit` config is a best guess; confirm the run command and VM deployment after importing to Replit.
-- The "at a glance" ordering (best rank, then summed rank score) is a placeholder until weights.py exists.
+- The results page shows Last.fm facts, not taste profiles yet. Top tags are dominated by broad words (rock, indie); Phase 3's taxonomy and thin-tag borrowing fix this.
+- `.replit` config is untested on Replit. Postgres on Replit is untested (code path exists: set `DATABASE_URL`).
+- One worker thread means a long full stage delays other users' full stages (not their quick stages). Fine for a friends launch.
+- The job page link is the only way back to a result (no cookie yet).
 - starlette warns that its TestClient will want `httpx2`; harmless for now.
-- Open decisions: D-25 profile count for small libraries (narrow_electronic is the test case); D-28 Last.fm request pacing (recommend 1/s plus progressive results).
-- Speed: a new artist costs about 3 Last.fm calls, so 100 uncached artists take about 5 minutes at 1/s. The Phase 2 target of "150 unseen artists in 90 s" is not reachable; progressive results (profile from the top 40 artists first) plus the shared cache are the plan.
-- Synthetic personas come from current charts, so their artists skew to recent hits; real exports have deeper catalogues and older favourites.
+- Open decision: D-25 profile count for small libraries.
 
 ## Next steps
-1. Mike: confirm the corrected key is in Replit Secrets; press Run on Replit and check `/health` (see TODO.md).
-2. Claude: Phase 2 (Last.fm client, cache, job runner with progressive results), then Phase 3 taxonomy and profiling.
+1. Mike: in Replit, add the PostgreSQL database (sets `DATABASE_URL`), confirm `LASTFM_API_KEY` in Secrets, press Run, and check `/health` (see TODO.md).
+2. Claude: Phase 3, profiling: tag-family taxonomy, Skiley genre prior, thin-tag borrowing from similar artists, profile names and descriptions, tested on Mike and the four personas.
 
 ## Run
 ```
 cd C:\dev\playlist-forge
 .venv\Scripts\activate
+python scripts/prewarm_cache.py      # optional, after scripts/lastfm_smoke.py
 uvicorn app.web.main:app --reload
 pytest
 ```
 
 ## Resume prompt
 ```
-Continue Playlist Forge in C:\dev\playlist-forge. Read HANDOFF.md, TODO.md and docs/PLAN.md first. Phase 0 scaffold and the Phase 1 classifier/parser are done with 25 passing tests, including four synthetic personas. Next: [Last.fm smoke test / Phase 2 enrichment and job runner].
+Continue Playlist Forge in C:\dev\playlist-forge. Read HANDOFF.md, TODO.md and docs/PLAN.md first. Phases 0-2 are done (upload, period detection, Last.fm enrichment with a shared cache and two-stage background jobs; 44 tests). Next: Phase 3 profiling.
 ```

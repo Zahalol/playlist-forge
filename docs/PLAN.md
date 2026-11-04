@@ -62,11 +62,11 @@ The initial push covers Phases 0 to 4. Phases 2 and 3 are the bulk of the work: 
 - [ ] Web: upload page, classification review with override dropdowns, table view, CSV download.
 - Done when: 9 files from a stranger classify and parse correctly in under 2 seconds, and a bad file gets a clear message.
 
-### Phase 2 - Enrichment and jobs
-- [ ] `app/pipeline/enrich.py`: Last.fm and Deezer clients, async, one global throttle per source (Last.fm about 1 request per second, Deezer polite delay). Deezer failures degrade gracefully.
-- [ ] Shared cache tables in Postgres keyed by normalised name, storing the Deezer id and fan count so name collisions (Geese, Wednesday, Flower) are visible. Pre-warm from poc/output/music_cache.json.
-- [ ] Job runner: in-process asyncio queue on the Reserved VM, job state and progress in Postgres, job id in the URL and a cookie so closing the tab does not lose it.
-- Done when: a first-time user with 150 unseen artists finishes in under 90 seconds, a repeat user in under 10 seconds.
+### Phase 2 - Enrichment and jobs (done 2026-11-04)
+- [x] Last.fm client (`app/clients/lastfm.py`) with a global 1 request/second throttle and retries; enrichment (`app/pipeline/enrich.py`) is cache-first. Deezer dropped to an unbuilt fallback (D-27).
+- [x] Shared artist cache in Postgres/SQLite keyed by normalised name, storing Last.fm's corrected name so collisions are visible. Pre-warm from saved Last.fm responses (`scripts/prewarm_cache.py`).
+- [x] Job runner: one worker thread with a priority queue on the VM, job state and progress in the database, job id in the URL. (Cookie link-back moved to TODO.)
+- Done criterion revised (D-28): first results in about a minute (top 40 artists), the rest in the background; repeat artists are free. Live run: quick stage about 65 seconds on Mike's export.
 
 ### Phase 3 - Profiling
 - [ ] Tag-family taxonomy in `app/pipeline/taxonomy.json` (about 15 families).

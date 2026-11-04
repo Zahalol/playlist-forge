@@ -33,13 +33,13 @@ One row per decision. Add new ones at the bottom of Decided or Open. Last update
 | D-26 | Extra test exports | Synthetic personas generated from Deezer genre charts (scripts/make_synthetic_fixtures.py) instead of friends' exports: mainstream, country_classic, narrow_electronic, heavy | No privacy question; reproducible; covers tastes unlike Mike's. Real friends' exports can still be added later with consent. | 2026-11-04 |
 | D-27 | Primary data source | Last.fm for everything in the MVP: artist tags, similar artists, listener counts (popularity), top tracks. Deezer only as a fallback when Last.fm has no data. Songs inherit artist tags; track.getSimilar is a bonus for older songs. | Smoke test (docs/LASTFM_SMOKE_RESULTS.md): 95-100% artist tag coverage, 100% similar artists, sensible listener counts; song similarity empty for recent releases. One source is simpler and Deezer may close. Confirmed after comparing MusicBrainz, ListenBrainz and eight other APIs (docs/API_EVALUATION.md): Last.fm leads on coverage, tag depth and similar-artist quality, and no free source avoids a ~1 request/second per-artist step. | 2026-11-04 |
 | D-29 | Second-opinion sources | v0.2: ListenBrainz (similar artists, official MusicBrainz genres, similar recordings for older songs) via the keyless batch song lookup for IDs, plus a free ListenBrainz user token for top tracks and LB Radio. Later: Discogs styles from the CC0 dump; GetSongBPM for event playlists. Skip TheAudioDB, Wikidata, YouTube, AcousticBrainz, Every Noise, paid APIs. | docs/API_EVALUATION.md. Agreement between two similarity sources improved recs in the proof of concept, but it adds complexity the MVP does not need. | 2026-11-04 |
+| D-28 | Last.fm request pacing | 1 request/second globally, with backoff on rate-limit errors. Two-stage jobs: the top 40 artists of every queued job are fetched before the remaining artists of any job, so each user sees a first result quickly. Shared cache across users. Revisit (about 3/second) only if real users find it slow and Last.fm does not object. | Safe reading of Last.fm's terms; API evaluation showed no faster free source. Mike approved. | 2026-11-04 |
 
 ## Open
 
 | ID | Question | Options | Recommendation |
 |---|---|---|---|
 | D-25 | Profile cap for small libraries | Always try for several profiles, or allow 1-2 | Allow 1-2; the narrow_electronic persona is the test case. |
-| D-28 | Last.fm request pacing | (a) 1 request/second, the safe reading of the terms; (b) about 3/second with backoff on error 29 (rate limit) | (a) plus progressive results: profile from the top 40 artists first (about 80 calls, under 90 seconds), fill in the rest and the recommendations in the background, and rely on the shared cache. Move to (b) only if real users find it too slow and Last.fm does not complain. |
 
 ## Superseded
 

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Your results - Playlist Forge{% endblock %}
+{% block content %}
+<h2>Your listening</h2>
+<p><small>Bookmark this page to come back to it. Results are deleted after 24 hours.</small></p>
+
+<div id="job-status" hx-get="/jobs/{{ job.id }}/status" hx-trigger="load" hx-swap="innerHTML">
+  {% include "_job_status.html" %}
+</div>
+{% endblock %}
