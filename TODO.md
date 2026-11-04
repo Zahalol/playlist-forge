@@ -18,6 +18,15 @@ Short backlog. Current state, open items and next steps live in HANDOFF.md; phas
 - [x] Three Skiley screenshots in app/web/static/guide/, cropped from Mike's screen recording; guide steps rewritten to match Skiley's real flow (2026-11-04).
 - [ ] Replit: `git pull origin main`, then deploy to the Reserved VM (Secrets: LASTFM_API_KEY, DATABASE_URL) and send the link to friends.
 
+## Next after friends' feedback (Mike's direction, 2026-11-04; details in docs/FUTURE_IDEAS.md "Mike's direction notes")
+- [ ] A. Site clean-up: UI and UX of the current flow (start from friends' complaints).
+- [ ] C. Research write-up: best and most efficient way to improve recommendations (sources, call volume, cost) before coding.
+- [ ] B. Recommendation experiments: second similarity source, finer genres, song-level tags and moods, feedback learning; measured on the fixture listeners.
+- [ ] G. Fuller Spotify history import (official data export, Last.fm scrobbles, manual entry fallback).
+- [ ] H. Google login or magic link with saved profiles (no-login path stays).
+- [ ] D/E. Describe-a-playlist with discovery and favourites modes.
+- [ ] F. Friends: joint playlists from a description and both histories.
+
 ## Claude (after Phase 4)
 - [ ] Profile rename and merge on the results page (D-31).
 - [ ] Remember the last job in a cookie so the landing page can link back to it.

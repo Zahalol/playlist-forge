@@ -2,6 +2,21 @@
 
 Not for the MVP. Rough priority order within each group. Move an item into PLAN.md when it is scheduled. Last updated 2026-11-04.
 
+## Mike's direction notes (2026-11-04, after the first full run)
+
+Written down after Phase 5 was built; none of this is scheduled yet. Items A and B are the nearest; the rest build on each other roughly in order. Numbers in brackets point at the older entries below that cover the same ground.
+
+- **A. Site clean-up: UI and UX of the current flow.** Landing to results in fewer, clearer steps; the results page is long (profiles, recommendations, playlists, import steps) and needs structure, maybe tabs or a sticky index; a consistent visual style beyond stock Pico; progress copy that says what is happening and how long it takes. First input: the top complaints from friends (PLAN Phase 5 done criterion).
+- **B. Better recommendations: more genre and song-level signals.** Today: Last.fm artist tags mapped to 16 families, artist-level similarity, top tracks per artist. Experiments to try: a second similarity source (ListenBrainz [20a]), finer styles (Discogs dump [20c]), song-level tags and moods [18], track.getSimilar for older songs, agreement between sources as a confidence boost, and learning from the thumbs feedback [17]. Measure with the five fixture listeners (scripts/recs_report.py) and the feedback table before changing defaults.
+- **C. Research: the best and most efficient way to do B.** Options to compare on quality, call volume, cache hit rate and cost: more Last.fm calls vs ListenBrainz vs offline tables (Discogs, MusicBrainz dumps) vs an embedding over tags; where a small model (or an LLM behind a flag [16]) earns its cost. Output: a short write-up in docs/ with a recommendation, before any code.
+- **D. Describe-a-playlist.** The user types what they want ("late-night driving, mostly new to me", "upbeat 90s country") and gets a playlist built from their own taste plus recommendations. Needs song-level tags and moods (B), a way to map free text to tags (rules first, LLM behind a flag), and the existing playlist builder with role mixes as parameters. Related: event and situation playlists [1], LB Radio prompts [20b].
+- **E. Playlist modes from descriptions.** Two bases for the same description: (1) discovery, songs the user has not heard plus recommended songs; (2) favourites, built from songs they already play, with an option to blend in similar songs. The current per-profile playlist is a fixed 3 anchors / new picks / 4 deep cuts mix; make the mix and the base a user choice.
+- **F. Friends: joint playlists from a description and both listening histories.** Two (or more) users connect, type a description, and get a playlist from the overlap and from recommendations that score well for everyone. Needs saved results and share links [4], friend linking [2], and D. Privacy: each person opts in per playlist; nothing of one person's listening is shown to the other beyond the shared result.
+- **G. Better Spotify history import.** Skiley's lists are capped at 50 per period and only three periods. Options: Spotify's official data export with full streaming history [11] (slow to arrive, but complete), Last.fm scrobbles for users who have them [14], manual artist entry as a fallback [12], re-uploads over time for taste drift [6]. Goal: a fuller, longer view of listening than nine 50-item lists.
+- **H. Google login and saved profiles.** Sign in with Google (or a magic link [24]) so a user keeps their results, playlists, votes and re-uploads over time; the base for F. Keep the no-login path: anyone can still use the site without an account, and nothing about Spotify credentials changes (D-03).
+
+Suggested order: A and friends' feedback, then C (research) feeding B, then G, then H, then D and E, then F.
+
 ## Mike's original ideas
 
 1. **Event and situation playlists**: workout, guys weekend, bachelorette party, road trip, dinner party. A filter over the user's profiles plus mood and energy tags (Last.fm "upbeat", "chill", "party"; BPM from GetSongBPM) and an explicit-content toggle.

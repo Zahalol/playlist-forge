@@ -26,6 +26,7 @@ _Date: 2026-11-04 - Session 2_
 1. Mike: pull on Replit, deploy to the Reserved VM (Secrets: LASTFM_API_KEY; DATABASE_URL is set automatically by Replit's database), send the link to friends.
 2. Recommendation tuning from TODO.md once friends have used it; read the `feedback` table (FeedbackStore.summary()).
 3. Deferred items in TODO.md (rename/merge D-31, cookie link-back, demo page).
+4. Mike's direction for v0.2 and beyond (2026-11-04): docs/FUTURE_IDEAS.md "Mike's direction notes" (A to H) and the matching TODO.md section. Suggested order: UI/UX clean-up with friends' feedback, then a research write-up on recommendation sources, then recommendation experiments, fuller history import, login with saved profiles, describe-a-playlist, friends' joint playlists.
 
 ## How to run things
 ```
@@ -57,5 +58,5 @@ Replit Shell: `git pull origin main`, then `pip install -r requirements.txt` if 
 Project: C:\dev\playlist-forge (Playlist Forge; GitHub Zahalol/playlist-forge)
 Read first: HANDOFF.md, CLAUDE.md, TODO.md, docs/PLAN.md (Phase 4 and 5), docs/ARCHITECTURE.md, docs/DECISIONS.md
 State: Phases 0-4 done, Phase 5 built (guide, about/privacy, limits, mobile check; 87 tests pass, pushed to main; Soundiiz import verified, all songs matched).
-Next: Mike deploys to the Reserved VM and adds guide screenshots; then friends' feedback, recommendation tuning (TODO.md), deferred items (rename/merge D-31, cookie link-back, demo page).
+Next: Mike deploys to the Reserved VM; then friends' feedback and the UI/UX clean-up (TODO.md, FUTURE_IDEAS "Mike's direction notes" A), then the recommendation research write-up (C) before experiments (B).
 ```
