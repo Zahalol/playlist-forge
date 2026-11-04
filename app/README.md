@@ -20,5 +20,6 @@ app/
   jobs.py                worker thread, priority queue, quick/full/borrow stages, profiles
   web/
     main.py              FastAPI routes; create_app() factory (tests inject a fake fetcher)
-    templates/           base, index, upload, review, job, _job_status (HTMX partial)
+    templates/           base, index, guide, about, upload, review, job, _job_status (HTMX partial: progress, recs, profiles, playlists, Soundiiz steps), _vote
+    static/guide/        Skiley screenshots for the guide (see its README)
 ```

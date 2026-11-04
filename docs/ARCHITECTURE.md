@@ -108,6 +108,16 @@ Built in `app/pipeline/playlist.py`; ported from the proof of concept's "Recomme
 - The job id is in the URL only (cookie link-back is a TODO). On restart, unfinished jobs are re-queued at the stage after `stage_done` and resume cheaply from the cache.
 - A failure inside the recs stage keeps the profiles and marks the job done with `recs_error`; only an invalid Last.fm key fails the job.
 
+## Limits and abuse
+
+- Upload: 100 KB per file, 12 files, 8 uploads per visitor address per hour (`RateLimit` in `app/web/main.py`: in-memory sliding window, fine for the single-process Reserved VM; the address comes from the first `X-Forwarded-For` entry behind Replit's proxy). Over the limit returns 429 with a friendly message.
+- Enrichment: 150 artists per job, 150 candidate listener lookups, 120 top-track lookups; one Last.fm request per second for the whole process (D-28).
+- Jobs and their uploads expire after 24 hours and are purged hourly.
+
+## Pages
+
+`/` landing, `/guide` export guide (Skiley steps, two-logins copy, screenshots from `app/web/static/guide/` when present), `/upload`, `/review/{id}`, `/jobs/{id}` results, `/about` (about, privacy, credits). `/static` serves `app/web/static`.
+
 ## Privacy
 
 Uploads and results belong to the session and are deleted after 24 hours. Nothing a user uploads goes into the repo, logs (beyond counts), or the shared cache. Feedback is anonymous: the `feedback` table keeps only the artist name, the profile family, the vote and the job id (which expires with the job).

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Export guide - Playlist Forge{% endblock %}
+{% block content %}
+<h2>Get your listening stats out of Spotify</h2>
+<p>Playlist Forge reads the text files that <a href="https://skiley.net/stats" target="_blank" rel="noopener">Skiley</a> exports from your Spotify account. It takes about three minutes the first time.</p>
+
+<article>
+  <h3>Two sign-ins, neither of them here</h3>
+  <p>You sign in to Spotify on Skiley to export your stats, and later on Soundiiz (or TuneMyMusic) to save a playlist. Both are established third-party tools that use Spotify's official login. Playlist Forge never asks for your Spotify login and never sees it: all it gets is the text files you upload, and it deletes them after 24 hours.</p>
+</article>
+
+<h3>Step by step</h3>
+<ol class="guide">
+  <li>
+    <strong>Open Skiley's stats page</strong> at <a href="https://skiley.net/stats" target="_blank" rel="noopener">skiley.net/stats</a> and sign in with Spotify when it asks.
+    {% if "01-skiley-login.png" in shots %}<figure><img src="/static/guide/01-skiley-login.png" alt="Skiley's stats page with the Spotify sign-in button" loading="lazy"></figure>{% endif %}
+  </li>
+  <li>
+    <strong>Pick a list and a time range.</strong> Skiley shows your Top Tracks, Top Artists and Top Genres for the last 4 weeks, last 6 months and last 12 months. Each combination is one file, nine in all.
+    {% if "02-skiley-lists.png" in shots %}<figure><img src="/static/guide/02-skiley-lists.png" alt="Skiley's Top Tracks list with the time range selector" loading="lazy"></figure>{% endif %}
+  </li>
+  <li>
+    <strong>Export each list as text.</strong> Use Skiley's export (download) button for the list you are looking at. Your browser saves a file such as <code>Top_Tracks_-_Skiley_Export.txt</code>; later downloads of the same list get a number added, like <code>Top_Tracks_-_Skiley_Export__2_.txt</code>. That is fine: Playlist Forge reads the contents, not the file name.
+    {% if "03-skiley-export.png" in shots %}<figure><img src="/static/guide/03-skiley-export.png" alt="Skiley's export button" loading="lazy"></figure>{% endif %}
+  </li>
+  <li>
+    <strong>Repeat for the other lists.</strong> Nine files give the best profiles. In a hurry? The three 12-month files (tracks, artists, genres) are enough to start; you can add the rest later.
+  </li>
+  <li>
+    <strong>Upload the files here.</strong> Go to <a href="/upload">Start</a>, select all the files at once, and check the time periods we detected. Then build.
+  </li>
+</ol>
+
+<article>
+  <h3>Good to know</h3>
+  <ul>
+    <li>Skiley's free lists hold up to 50 items; a 4-week list can be shorter if you listened to fewer artists.</li>
+    <li>Only the text files leave Skiley. No playlists are changed, nothing is posted, nothing follows you.</li>
+    <li>If a file does not look like a Skiley export, the upload page says so and nothing is kept.</li>
+  </ul>
+</article>
+
+<p><a href="/upload" role="button">Start with your files</a></p>
+{% endblock %}

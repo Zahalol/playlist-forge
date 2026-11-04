@@ -17,6 +17,7 @@ from typing import Callable
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import HTMLResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from app.db import ArtistCache, FeedbackStore, JobStore, make_engine
@@ -33,7 +34,38 @@ templates = Jinja2Templates(directory=str(BASE / "templates"))
 MAX_FILES = 12
 MAX_BYTES = 100_000
 MAX_ARTISTS = 150          # enrichment budget per job (PLAN Phase 2)
+UPLOADS_PER_HOUR = 8       # per visitor (PLAN Phase 5 limits); each upload is one job
 GONE = "This upload has expired or does not exist. Please upload your files again."
+TOO_MANY = "That is a lot of uploads in one hour. This is a free service with limited music-data lookups; please try again in a while."
+
+
+class RateLimit:
+    """Sliding one-hour window of uploads per client address, in memory (one process on the Reserved VM)."""
+
+    def __init__(self, per_hour: int = UPLOADS_PER_HOUR, window: float = 3600.0):
+        self.per_hour, self.window = per_hour, window
+        self.hits: dict[str, list[float]] = {}
+
+    def allow(self, key: str, now: float | None = None) -> bool:
+        import time
+        now = now or time.time()
+        hits = [t for t in self.hits.get(key, []) if now - t < self.window]
+        if len(hits) >= self.per_hour:
+            self.hits[key] = hits
+            return False
+        hits.append(now)
+        self.hits[key] = hits
+        if len(self.hits) > 10_000:                     # forget idle addresses
+            self.hits = {k: v for k, v in self.hits.items() if v and now - v[-1] < self.window}
+        return True
+
+
+def client_ip(request: Request) -> str:
+    """Visitor address; behind Replit's proxy the real one is the first X-Forwarded-For entry."""
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 
 def default_fetcher_factory():
@@ -62,7 +94,9 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
         runner.stop()
 
     app = FastAPI(title="Playlist Forge", lifespan=lifespan)
-    app.state.store, app.state.cache, app.state.runner, app.state.votes = store, cache, runner, votes
+    limiter = RateLimit()
+    app.state.store, app.state.cache, app.state.runner, app.state.votes, app.state.limiter = store, cache, runner, votes, limiter
+    app.mount("/static", StaticFiles(directory=str(BASE / "static")), name="static")
 
     # ------------------------------------------------------------ helpers
     def load_job(jid: str) -> dict:
@@ -89,6 +123,15 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
     def index(request: Request):
         return render(request, "index.html")
 
+    @app.get("/guide", response_class=HTMLResponse)
+    def guide(request: Request):
+        shots = {p.name for p in (BASE / "static" / "guide").glob("*.png")} | {p.name for p in (BASE / "static" / "guide").glob("*.jpg")}
+        return render(request, "guide.html", {"shots": shots})
+
+    @app.get("/about", response_class=HTMLResponse)
+    def about(request: Request):
+        return render(request, "about.html")
+
     @app.get("/upload", response_class=HTMLResponse)
     def upload_form(request: Request):
         return render(request, "upload.html", {"error": None})
@@ -112,6 +155,8 @@ def create_app(db_url: str | None = None, fetcher_factory: Callable[[], object] 
             return render(request, "upload.html", {"error": "Add at least one Skiley export file."}, 400)
         if len(pairs) > MAX_FILES:
             return render(request, "upload.html", {"error": f"Up to {MAX_FILES} files at a time, please."}, 400)
+        if not limiter.allow(client_ip(request)):
+            return render(request, "upload.html", {"error": TOO_MANY}, 429)
         jid = store.create({"files": pairs, "overrides": {}})
         return RedirectResponse(f"/review/{jid}", status_code=303)
 

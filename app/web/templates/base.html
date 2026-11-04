@@ -29,13 +29,23 @@
     .vote { display: inline-flex; gap: 2px; }
     .vote button { width: 1.8rem; height: 1.8rem; padding: 0; margin: 0; line-height: 1; font-size: 1rem; }
     .vote button.on { background: var(--pico-primary, #1095c1); color: #fff; border-color: var(--pico-primary, #1095c1); }
+    ol.guide > li { margin-bottom: 1rem; }
+    ol.guide figure { margin: 0.5rem 0 0; } ol.guide img { max-width: 100%; border: 1px solid var(--pico-muted-border-color, #ddd); border-radius: 4px; }
+    figure { overflow-x: auto; }
+    @media (max-width: 600px) {
+      table.recs td:nth-child(4), table.recs th:nth-child(4) { display: none; }   /* "because" column: too wide on phones */
+      table.recs td, table.recs th { padding: 0.4rem 0.3rem; font-size: 0.85rem; }
+      .fit i { width: 5px; height: 12px; }
+      .vote { flex-direction: column; }
+      .playlist .actions { margin-left: 0; flex-basis: 100%; }
+    }
   </style>
 </head>
 <body>
   <header class="container">
     <nav>
       <ul><li><a href="/"><strong>Playlist Forge</strong></a></li></ul>
-      <ul><li><a href="/upload">Start</a></li></ul>
+      <ul><li><a href="/guide">Export guide</a></li><li><a href="/upload">Start</a></li></ul>
     </nav>
   </header>
   <main class="container">
@@ -43,7 +53,8 @@
   </main>
   <footer class="container">
     Your files are processed and deleted after 24 hours. Playlist Forge never sees your Spotify login.
-    Not affiliated with Spotify.
+    Not affiliated with Spotify. Music data powered by <a href="https://www.last.fm" target="_blank" rel="noopener">Last.fm</a>.
+    <a href="/about">About</a> | <a href="/about#privacy">Privacy</a> | <a href="https://github.com/Zahalol/playlist-forge" target="_blank" rel="noopener">Source</a>
   </footer>
 </body>
 </html>

@@ -7,7 +7,8 @@ _Date: 2026-11-04 - Session 2_
 - Pipeline: `recommend.py` (candidates, listener-relative dampener D-32, quotas, balanced order, fit bars) and `playlist.py` (3 anchors, new picks one per artist, up to 4 deep cuts, title cleaning, "Artist - Song" text).
 - Jobs: stage `recs` (listener counts for up to 150 of the 200 strongest candidates) then step `songs` (top tracks for up to 120 artists), all in the third queue priority. Result JSON holds recommendations, by_profile, big_names, playlists. Restart resumes at the right stage; a failure inside the stage keeps the profiles (`recs_error`).
 - Results page: progress per stage, "Artists you might like" table with thumbs up/down (anonymous, `feedback` table, D-13), Explore line per profile, big names skipped, songs-per-playlist control (5-50, rebuilt from the cache), playlist cards with Copy, Download .txt, "Why these songs", import steps for Soundiiz and TuneMyMusic.
-- 85 tests pass locally (`pytest`, no network). Verified live in the browser pane with Mike's export: warm recs stage in seconds, songs stage about 2 minutes (118 top-track calls), seven 20-song playlists, no console or server errors.
+- Phase 5 built: `/guide` (export steps, two-logins copy, screenshots when present), `/about` (privacy, credits), footer links, 8 uploads per visitor per hour, phone layout fixes (checked at 375 px).
+- 87 tests pass locally (`pytest`, no network). Verified live in the browser pane with Mike's export: warm recs stage in seconds, songs stage about 2 minutes (118 top-track calls), seven 20-song playlists, no console or server errors.
 - Local cache: about 1,050 artists (fixture artists, top candidates' listener counts, top tracks for Mike's playlist artists).
 - Commit 4957b17 (Phase 4a) is on GitHub main; Phase 4b (playlists) is committed at the end of this session (see the Git summary). Replit has not pulled Phase 3 or 4. No public deployment.
 
@@ -18,10 +19,11 @@ _Date: 2026-11-04 - Session 2_
 - [ ] Recommendation quirks to revisit with real playlists: band members and side projects as recs (Jerry Garcia for Grateful Dead, Rivers Cuomo for Weezer, John Fogerty for CCR); mashup names ("Bob Dylan and The Band"); one-seed musicals recs with tiny listener counts (Pet Needs, 6K, from Operation Mincemeat alone); whether 50 recs overall is the right length.
 - [ ] Profile placements noted earlier still stand (Red Hot Chili Peppers and DISPATCH in Indie & Alternative; "Indie Country & Country Rock" for the mainstream persona).
 - [ ] Profile rename/merge (D-31), cookie link-back, demo results page, export guide page, Phase 5 polish: TODO.md.
-- [ ] Deployment to the Reserved VM: nothing blocks it now.
+- [ ] Deployment to the Reserved VM: nothing blocks it now. Note the in-memory rate limiter resets on restart (fine for one process).
+- [ ] Guide screenshots: three PNGs named in app/web/static/guide/README.md; the page hides the figures until they exist.
 
 ## Next steps
-1. Phase 5 (docs/PLAN.md): guide page with screenshots, about/privacy page with attributions, mobile check, per-IP limits, then deploy to the Reserved VM.
+1. Mike: pull on Replit, add the three Skiley screenshots to `app/web/static/guide/` (names in its README), deploy to the Reserved VM, send the link to friends.
 2. Recommendation tuning from TODO.md once friends have used it; read the `feedback` table (FeedbackStore.summary()).
 3. Deferred items in TODO.md (rename/merge D-31, cookie link-back, demo page).
 
@@ -30,7 +32,7 @@ _Date: 2026-11-04 - Session 2_
 cd C:\dev\playlist-forge
 .venv\Scripts\activate
 uvicorn app.web.main:app --reload        # local site at http://127.0.0.1:8000
-pytest                                   # 85 tests, no network
+pytest                                   # 87 tests, no network
 python scripts/profile_report.py         # profiles for Mike + 4 personas from the local cache
 python scripts/recs_report.py            # recommendations for the same five, from the local cache
 python scripts/recs_report.py --fetch 150 mike   # also look up listener counts for Mike's top 150 candidates (Last.fm key)
@@ -54,6 +56,6 @@ Replit Shell: `git pull origin main`, then `pip install -r requirements.txt` if 
 ```
 Project: C:\dev\playlist-forge (Playlist Forge; GitHub Zahalol/playlist-forge)
 Read first: HANDOFF.md, CLAUDE.md, TODO.md, docs/PLAN.md (Phase 4 and 5), docs/ARCHITECTURE.md, docs/DECISIONS.md
-State: Phases 0-4 done plus size control and thumbs (85 tests pass, pushed to main; Soundiiz import verified, all songs matched).
-Next: Phase 5 polish (guide, about/privacy, mobile, limits) and deployment to the Reserved VM.
+State: Phases 0-4 done, Phase 5 built (guide, about/privacy, limits, mobile check; 87 tests pass, pushed to main; Soundiiz import verified, all songs matched).
+Next: Mike deploys to the Reserved VM and adds guide screenshots; then friends' feedback, recommendation tuning (TODO.md), deferred items (rename/merge D-31, cookie link-back, demo page).
 ```

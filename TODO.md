@@ -19,5 +19,6 @@ Short backlog. Current state, open items and next steps live in HANDOFF.md; phas
 - [ ] Profile rename and merge on the results page (D-31).
 - [ ] Remember the last job in a cookie so the landing page can link back to it.
 - [ ] Demo results page built from the fixture (PLAN MVP item 1).
-- [ ] Export guide page with screenshots and the honest two-logins copy (PLAN MVP item 2).
-- [ ] Phase 5 polish: about/privacy page with attributions, mobile check, per-IP limits.
+- [x] Export guide page with the honest two-logins copy (2026-11-04). Mike: add the three Skiley screenshots (app/web/static/guide/README.md).
+- [x] Phase 5 polish: about/privacy page with attributions, mobile check, per-IP limits (2026-11-04).
+- [ ] Deploy to the Reserved VM and send the link to friends; fix the top 3 complaints (Phase 5 done criterion).

@@ -24,6 +24,29 @@ def test_health_and_pages():
     assert c.get("/health").text == "ok"
     assert "Playlist Forge" in c.get("/").text
     assert "Upload your Skiley exports" in c.get("/upload").text
+    guide = c.get("/guide").text
+    assert "skiley.net/stats" in guide and "never asks for your Spotify login" in guide
+    about = c.get("/about").text
+    assert "Last.fm" in about and "deleted after 24 hours" in about and 'id="privacy"' in about
+    assert c.get("/static/guide/README.md").status_code == 200
+
+
+def test_upload_rate_limit_per_address(unlabeled_files):
+    app, c, _ = make()
+    app.state.limiter.per_hour = 2
+    assert upload(c, unlabeled_files) and upload(c, unlabeled_files)
+    payload = [("files", (fn, txt.encode("utf-8"), "text/plain")) for fn, txt in unlabeled_files]
+    r = c.post("/upload", files=payload)
+    assert r.status_code == 429 and "lot of uploads" in r.text
+    # a different visitor (proxy header) is not affected
+    r = c.post("/upload", files=payload, headers={"x-forwarded-for": "203.0.113.9, 10.0.0.1"}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_rate_limit_window_expires():
+    from app.web.main import RateLimit
+    rl = RateLimit(per_hour=1, window=10)
+    assert rl.allow("a", now=100) and not rl.allow("a", now=105) and rl.allow("a", now=111)
 
 
 def test_upload_review_and_csv(unlabeled_files):

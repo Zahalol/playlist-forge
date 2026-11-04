@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}About and privacy - Playlist Forge{% endblock %}
+{% block content %}
+<h2>About Playlist Forge</h2>
+<p>Playlist Forge is a free, open-source hobby project. It turns the listening stats you export from Spotify into taste profiles, artist recommendations and ready-made playlists. There are no accounts, no fees and no ads.</p>
+
+<article>
+  <h3>How it works, in short</h3>
+  <ol>
+    <li>You upload the Top Tracks, Top Artists and Top Genres text files that Skiley exports from your Spotify account.</li>
+    <li>We look up each artist on Last.fm (genre tags, similar artists, listener counts, top tracks) and split your listening into profiles.</li>
+    <li>Artists that listeners of your artists also play become recommendations, balanced across your profiles and dampened for very big names.</li>
+    <li>Each profile gets a playlist as plain "Artist - Song" text, which Soundiiz or TuneMyMusic imports into Spotify for you.</li>
+  </ol>
+</article>
+
+<h2 id="privacy">Privacy</h2>
+<ul>
+  <li><strong>No Spotify login.</strong> Playlist Forge never asks for, sees or stores your Spotify credentials. You sign in to Spotify on Skiley (to export) and on the import tool (to save a playlist), both through Spotify's own login.</li>
+  <li><strong>Your files and results are deleted after 24 hours.</strong> They live in a private job that only its link can open. They are never published, shared with other users, or written to the project's public code.</li>
+  <li><strong>The shared cache holds facts about artists, not about you.</strong> Genre tags, similar artists, listener counts and top tracks are cached so that the next person is served faster. The cache does not record who asked.</li>
+  <li><strong>Feedback is anonymous.</strong> A thumbs up or down is stored against the recommended artist, with no account, name or address attached.</li>
+  <li><strong>Server logs</strong> hold request lines and counts only, no list contents. There is no analytics or advertising code.</li>
+  <li><strong>Limits</strong> keep the free service free: files up to 100 KB, 12 files per upload, a handful of builds per hour per visitor, and jobs that expire after 24 hours.</li>
+</ul>
+
+<h2 id="credits">Credits</h2>
+<ul>
+  <li>Music data powered by <a href="https://www.last.fm" target="_blank" rel="noopener">Last.fm</a> (artist tags, similar artists, listener counts and top tracks, under its non-commercial API terms). The tag families used for profiling are our own.</li>
+  <li>Listening stats exported with <a href="https://skiley.net" target="_blank" rel="noopener">Skiley</a>.</li>
+  <li>Playlist import to Spotify with <a href="https://soundiiz.com" target="_blank" rel="noopener">Soundiiz</a> or <a href="https://www.tunemymusic.com" target="_blank" rel="noopener">TuneMyMusic</a>.</li>
+  <li>Built with <a href="https://fastapi.tiangolo.com" target="_blank" rel="noopener">FastAPI</a>, <a href="https://htmx.org" target="_blank" rel="noopener">htmx</a> and <a href="https://picocss.com" target="_blank" rel="noopener">Pico CSS</a>; hosted on Replit.</li>
+  <li>Source code: <a href="https://github.com/Zahalol/playlist-forge" target="_blank" rel="noopener">github.com/Zahalol/playlist-forge</a> (MIT licence).</li>
+</ul>
+<p><small>Playlist Forge is not affiliated with Spotify, Last.fm, Skiley, Soundiiz or TuneMyMusic. Spotify is a trademark of Spotify AB.</small></p>
+{% endblock %}
